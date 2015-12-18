@@ -1,0 +1,52 @@
+namespace IO;
+
+enum uint StreamErrorCode
+{
+  uint StreamClosed = 1;
+}
+
+error IOError
+{
+  StreamErrorCode errorCode;
+}
+
+error ReadError : IOError
+{
+}
+
+error WriteError : IOError
+{
+}
+
+interface ByteWriter
+{
+   void Write(byte b) reports WriteError;
+   bool Write(byte b);
+}
+
+interface CStringWriter : ByteWriter
+{
+   void Write(byte *cstring) reports WriteError;
+   byte *Write(byte *cstring);
+}
+
+interface BufferWriter : ByteWriter
+{
+   void Write(byte_buff buff) reports WriteError;
+   void Write(byte_arr arr) reports WriteError;
+}
+
+interface ByteReader
+{
+   byte Read() reports WriteError;
+   int2 Read();
+}
+
+interface BufferReader : ByteReader
+{
+   byte *Read(byte_buff buffer);
+   uword Read(byte_arr arr);
+
+   void Read(byte_buff buffer) reports ReadError;
+   void Read(byte_arr arr) reports ReadError;
+}

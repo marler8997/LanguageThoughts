@@ -1,0 +1,14 @@
+
+I had an idea to creat a macro laguage that you could embed inside source code for other launguages.
+
+The language would generate source code.
+
+For example, if you embedded the code inside C# you could generate a for loop around an array:
+
+// loop myarray { Console.WriteLine("[{0}] {1}", i, myarray[i]); }
+
+would generate the code:
+for(int i = 0; i < myarray.Length; i++)
+{
+    Console.WriteLine("[{0}] {1}", i, myarray[i]);
+}

@@ -1,0 +1,50 @@
+
+1. Concept of Input/Output Syntax
+
+Functions have Inputs and Outputs
+
+
+  9 ===|           |
+       |           |
+  4 ===| SUM_THREE |=== 15
+       |           |
+  2 ===|           |
+  
+  
+  9,4,2 => SUM_THREE => print
+  
+  
+2. New Order of function call syntax
+
+	Instead of function(1,2,3,...);
+	use (1,2,3,...) > function > (out1,out2);
+	
+3. Function Call Building?
+
+	function f; // declare a function call
+	
+	(1,?,?,?) > f;
+	
+	// some stuff here
+	
+	(?,2,3,4) > f > (out1,out2);
+	
+4. Declaring a function
+
+	function (int a, int b) sumAndDifferce (int sum,int diff) {
+		sum = a + b;
+		diff = a - b;
+	}
+	
+	int sum,diff;
+	
+	(1,2) > sumAndDifferce > (sum,diff);
+	
+	
+5. Logic Blocks	
+	
+	// logic version of sum
+	
+	logic sum(integer a, integer b, out integer result) {
+		result = a + b;
+	}

@@ -1,0 +1,65 @@
+use Net.Socket; // Net.Socket.Socket
+                // Net.Socket.AddressFamily (sub namespace)
+                // Net.Socket.Internetwork  (sub namespace)
+
+namespace Marler.NetworkTools;
+
+// [listen] is a switch, by default a client sets it using the first letter (unless there is a conflict
+//          in which case you can specify [<letter>:listen]
+default entry(io io, out info) client(const char *host, uint2 port, uint2 localPort=0,[listen])
+{
+  // sb = stack buffer
+  sb io2socketBuffer[*io2socket=4096]; // These buffers are allocated on the stack, but their sizes
+  sb socket2ioBuffer[*socket2io=4096]; // can be changed by the caller.
+                                       // Under the hood, the caller has to pass what size they've allocated
+                                       // for each dynamic buffer as extra parameters in the function
+                                       // signature. 
+                                       // NOTE: the "=<num>" is the default size
+
+  Socket socket = init Socket(AddressFamily.InterNetwork, SocketType.Stream, Protocol.Tcp);
+
+  // Note: the error conditions for the return value of the Socket function
+  // are known by the compiler and therefore, no error handing needs to
+  // be done by the caller of the Socket class.
+	
+  if([listen]) {
+    if(localPort == 0) {
+      throw ArgumentException(localPort, [listen], "listen mode requires a localPort to be set");
+    }
+    socket.Bind(IPAddress.Any, localPort);
+    socket.Listen(1);
+    socket = socket.Accept();		
+  } else {
+    socket.Connect(host, port);	
+    // Since no error handling is specified for socket.Connect, any errors will cause
+    // the program to halt and print the error information.  Need some way to specify 
+    // that any unhandled errors in this function should be printed to the info output stream
+    // and then the function should return an error	
+  }	
+
+  ioSocketTunnel(socket, socket2ioBuffer, io2socketBuffer);
+}
+
+ioSocketTunnrl(Socket socket, sb socket2io, sb io2socket)
+{
+  thread socket2ioLoop(socket, socket2ioBuffer, socket2ioBuffer.lim);
+}
+
+socket2ioLoop(Socket socket, sb buffer)
+{
+  while {
+    byte * readLimit = socket.Read(buffer);
+    if(readLimit <= buffer.pointer) break;
+
+    io.Write(buffer, readLimit);
+  }	
+}
+io2socketLoop(Socket socket, sb buffer)
+{
+  while {
+    byte * readLimit = io.Read(buffer);
+    if(readLimit <= buffer.pointer) break;
+
+    socket.Write(buffer, readLimit);
+  }	
+}

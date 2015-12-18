@@ -1,0 +1,98 @@
+
+
+Strategy
+--------------
+I've learned that I tend to come up with the best designs as I think through the details.  I traverse the design tree depth first and let the little details shape the overal structure of the design.  Its a 'bottom up' approach.  In this new language, I should take the same approach.  I need to drop all of my existing assumptions such as a program having a main function, or a human console interface.  I need to break everything down to it's basic components and build the languages from there.
+
+
+Computer Languages
+--------------
+Computer languages are compiled to processor instructions.
+Most programs deal with transferring and transforming data.
+
+
+
+Computer Features
+--------------
+1. Constructing messages
+2. Network API
+3. Threading API
+4. File API
+
+
+Human Interface
+-------------
+Instead of a Console like interface, it should be a language interpreter, I mean, why not?
+Actually a console has some nice things about it.
+The console should be able to break into a language and start executing that.
+Or maybe there is an existing language that fits a console-type language already.
+
+
+
+
+
+Idea
+--------------
+No heap.  If you need more memory, you can allocate it on the stack.  If you need to make an existing buffer larger, you can re-allocate it on the stack and move the stack contents up to fill in the previous buffer.  At least for now, maybe add a heap later.
+
+When a program/library/module starts, it can take initialization parameters at load time that tell the program things such as how much memory it needs.
+
+
+//
+// Definition: A 'Byte Stream' is a stream of contiguous bytes.
+//   These bytes can be accessed by calls to read the stream
+//   A File can be accessed as a 'Byte Stream'.
+
+//
+// Definition: A 'ByteFile' is a contiguous buffer of bytes (a byte array).
+// ByteFile API:
+//   1. Need a way to get file information
+//   2. Need a way to open a file as a Byte Stream.  This maps the file name to some sort of handle.
+//      The handle is used to read/write the file.
+//   3. Need a way to read the file.
+//   4. Need a memory-mapped API for the file.
+//
+
+
+
+Have Generic Error Types Defined
+-------------------------------
+1. Invalid Data
+
+
+
+
+Example: UTF8 Decode
+------------------------------
+
+namspace Utf8
+{
+  // This method assumes that utf8 points to at least one character
+  // and that the first non-valid pointer is at the limit pointer
+  // (this means that utf8 < limit)
+  dchar decode(ref inout(char)* utf8, const char* limit) {
+    dchar c = *utf8;
+    utf8++;
+    if((c & 0x80) == 0) {
+      return c;
+    }
+
+    if((c & 0x20) == 0) {
+      if(utf8 >= limit) throw new Exception(InvalidData, "UTF8 data ended prematurely");
+      utf8++;
+      return ((c << 6) & 0x7C0) | (*(utf8 - 1) & 0x3F);
+    }
+
+    implement();
+  }
+}
+
+
+
+
+
+Examples 1: Parse a simple file
+------------------------------
+
+
+// 1. 

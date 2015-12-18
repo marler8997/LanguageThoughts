@@ -1,0 +1,154 @@
+
+
+const sbyte DECODE_ERROR = -1;
+
+const byte* Encode64 = Ascii("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+const byte* Decode64 = {
+   DECODE_ERROR, // 0
+   DECODE_ERROR, // 1
+   DECODE_ERROR, // 2
+   DECODE_ERROR, // 3
+   DECODE_ERROR, // 4
+   DECODE_ERROR, // 5
+   DECODE_ERROR, // 6
+   DECODE_ERROR, // 7
+   DECODE_ERROR, // 8
+   DECODE_ERROR, // 9
+   DECODE_ERROR, // 10
+   DECODE_ERROR, // 11
+   DECODE_ERROR, // 12
+   DECODE_ERROR, // 13
+   DECODE_ERROR, // 14
+   DECODE_ERROR, // 15
+   DECODE_ERROR, // 16
+   DECODE_ERROR, // 17
+   DECODE_ERROR, // 18
+   DECODE_ERROR, // 19
+   DECODE_ERROR, // 20
+   DECODE_ERROR, // 21
+   DECODE_ERROR, // 22
+   DECODE_ERROR, // 23
+   DECODE_ERROR, // 24
+   DECODE_ERROR, // 25
+   DECODE_ERROR, // 26
+   DECODE_ERROR, // 27
+   DECODE_ERROR, // 28
+   DECODE_ERROR, // 29
+   DECODE_ERROR, // 30
+   DECODE_ERROR, // 31
+   DECODE_ERROR, // 32
+   DECODE_ERROR, // 33
+   DECODE_ERROR, // 34
+   DECODE_ERROR, // 35
+   DECODE_ERROR, // 36
+   DECODE_ERROR, // 37
+   DECODE_ERROR, // 38
+   DECODE_ERROR, // 39
+   DECODE_ERROR, // 40
+   DECODE_ERROR, // 41
+   DECODE_ERROR, // 42
+   62          , // 43 '+'
+   DECODE_ERROR, // 44
+   DECODE_ERROR, // 45
+   DECODE_ERROR, // 46
+   63          , // 47 '/'
+   52          , // 48 '0'
+   53          , // 49 '1'
+   54          , // 50 '2'
+   55          , // 51 '3'
+   56          , // 52 '4'
+   57          , // 53 '5'
+   58          , // 54 '6'
+   59          , // 55 '7'
+   60          , // 56 '8'
+   61          , // 57 '9'
+   DECODE_ERROR, // 58
+   DECODE_ERROR, // 59
+   DECODE_ERROR, // 60
+   DECODE_ERROR, // 61
+   DECODE_ERROR, // 62
+   DECODE_ERROR, // 63
+   DECODE_ERROR, // 64
+   0           , // 65 'A'
+   1           , // 66 'B'
+   2           , // 67 'C'
+   3           , // 68 'D'
+   4           , // 69 'E'
+   5           , // 70 'F'
+   6           , // 71 'G'
+   7           , // 72 'H'
+   8           , // 73 'I'
+   9           , // 74 'J'
+   10          , // 75 'K'
+   11          , // 76 'L'
+   12          , // 77 'M'
+   13          , // 78 'N'
+   14          , // 79 'O'
+   15          , // 80 'P'
+   16          , // 81 'Q'
+   17          , // 82 'R'
+   18          , // 83 'S'
+   19          , // 84 'T'
+   20          , // 85 'U'
+   21          , // 86 'V'
+   22          , // 87 'W'
+   23          , // 88 'S'
+   24          , // 89 'Y'
+   25          , // 90 'Z'
+   DECODE_ERROR, // 91
+   DECODE_ERROR, // 92
+   DECODE_ERROR, // 93
+   DECODE_ERROR, // 94
+   DECODE_ERROR, // 95
+   DECODE_ERROR, // 96
+   26          , // 97  'a'
+   27          , // 98  'b'
+   28          , // 99  'c'
+   29          , // 100 'd'
+   30          , // 101 'e'
+   31          , // 102 'f'
+   32          , // 103 'g'
+   33          , // 104 'h'
+   34          , // 105 'i'
+   35          , // 106 'j'
+   36          , // 107 'k'
+   37          , // 108 'l'
+   38          , // 109 'm'
+   39          , // 110 'n'
+   40          , // 111 'o'
+   41          , // 112 'p'
+   42          , // 113 'q'
+   43          , // 114 'r'
+   44          , // 115 's'
+   45          , // 116 't'
+   46          , // 117 'u'
+   47          , // 118 'v'
+   48          , // 119 'w'
+   49          , // 120 'x'
+   50          , // 121 'y'
+   51          , // 122 'z'
+   DECODE_ERROR, // 123
+   DECODE_ERROR, // 124
+   DECODE_ERROR, // 125
+   DECODE_ERROR, // 126
+   DECODE_ERROR, // 127
+};
+
+public unsigned BinaryToBase64PaddedLength(unsigned binaryLength)
+{
+   unsigned mod3 = binaryLength % 3;
+   unsigned temp = (mod3 == 0) ? binaryLength : binaryLength + 3 - mod3;
+   return (temp / 3) * 4;
+}
+
+public unsigned Base64NonPaddedToBinaryLength(unsigned base64NonPaddedLength)
+{
+   return base64NonPaddedLength * 3 / 4;
+}
+
+
+
+public void Encode(Buffer<byte> input, Buffer<byte> output)
+{
+
+}

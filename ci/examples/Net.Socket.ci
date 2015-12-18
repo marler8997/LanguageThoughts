@@ -1,0 +1,55 @@
+namespace Net.Socket;
+
+type handle int Socket; // the reason for specifying a type for a socket
+                        // handle instead of just using int, is to be
+			    // able to use TypeMethods!
+					   
+			   // The handle type specifier lets the compiler know that
+			   // the variable is a handle.  This helps the compiler because
+			   // the compiler now knows
+			   //    1. Treat this type as a "value" type, which means whenever
+			   //       it is passed into a TypeMethod, it should be passed by
+			   //       value.
+
+type uint IPAddress;
+
+namespace Net.Socket.IPAddress
+{
+	public const IPAddress Any = '255.255.255.255';
+}
+
+IPAddress Parse(const char *string);
+Boolean TryParse(const char *string, IPAddress *out);
+formatter char * Print(char *output, IPAddress ip);
+
+// The init function specifier on a function returning a handle type
+// indicates the function is meant for creating a new handle
+init Socket Socket(int addressFamily, int socketType, int protocol);
+void Connect(Socket socket, const char *host, uint2 port);
+void Connect(Socket socket, IPAddress ip, uint2 port);
+
+void Bind(Socket socket, IPAddress ip, uint2 port);
+void Listen(Socket socket, uint socketBacklog);
+
+Socket Accept(Socket socket);
+
+// The Socket class should implement the io interface
+void Write(Socket socket, const char *data); // a char * means that the data ends when null is seen
+void Write(Socket socket, const byte *data, const byte *dataLimit);
+byte * Read(Socket socket, byte * output, byte *outputLimit);
+
+// Must Advertise Maximum printing characters
+formatter char * PrintSocketError(char * output, SocketHandle socket);
+const char *SocketError(SocketHandle socket);
+
+namespace Net.Socket.AddressFamily;
+
+public const int InterNetwork = 4;
+
+namespace Net.Socket.SocketType;
+
+public const int Stream = 6;
+
+namespace Net.Socket.Protocol;
+
+public const int Tcp = 3;

@@ -1,0 +1,49 @@
+
+
+Library Support
+------------------------------------
+The language should have an internet community dedicated to creating standard libraries.
+
+People can submit libraries for review, and eventually they can be released in a standard library revision.
+
+In order to support open source library development, libraries must have a criteria for rating them.
+
+1. Performance
+     - Are there any standards, such as, a function should not take longer than x on system y?
+     - Are there other libraries that do the same things and can they be compared?
+     - Are there any performance tests that verify changes to the library don't negatively affect performance?
+2. Documentation
+     - Is there enough documentation?
+     - Is there too much documentation?
+     - Source code documentation: 
+         Source code documentation should be written to someone who is famailiar with the topic but has
+         never seen the code.  It is not the job of the programmer to educate the reader about the topic, only to educate
+         them on how the code is implementing it's solution. 
+          * Include explanations of how the code is organized/designed/implemented.
+          * Do not litter source code with topic explanation/discussion.
+3. Test Coverage
+    - Can the number of test cases be calculated?
+     - How many tests cases have been run and succeeded?
+4. Searchability
+     - Keywords
+     - Links to related libraries (How many links from? How many links to? How many missing links?)
+     - How many similar keywords and links does it have with neighboring libraries?
+         * (Neighboring meaning location in the repository or location in some sort of organized library tree)
+5. Improvement Criteria and Tests
+      - When a change is made, the old and new versions should be tested and compared.
+        The question is, is there criteria to determine if one version is better than the other and are there tests to measure this criteria?
+        example: one could say that the better library is one that results in fewer average machine instructions, however
+                 testing that may not be implemented at the time.
+6. Community Usage to Exposure ratio
+     - How many organizations/people are using this library currently and how long has it been exposed?
+7. Community Rating
+     - Usefullness?
+     - Performance?
+     - Good API?
+     - Overall Rating?
+     - Is it ready to become a standard? If not, what does it need to become ready?
+     - ...
+8. Change velocity/acceleration
+     - How frequent are the current changes?
+     - Are changes to the library accelerating/decelerating?
+

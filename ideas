@@ -1,0 +1,101 @@
+
+
+Every language has to deal with "Garbage Collection".
+Instead of dealing with cleaning up garbase, focus on creating programs that never need to clean up their memory.
+Sections of code will define what kind of memory they need, and this information gets pushed up function by function
+until the main program which will determine how much memory it will need.  It may not know how much memory it will need
+at compile time, but it should be able to generate an equation to determine how much memory it will need.  For example,
+a server program may need a certain amount of memory for every client, so this memory equation will use the number
+of clients as a input to how much memory it will need.  The server cannot have infinite clients at the same time,
+but it may server an infinite number of clients, so the language will have the concept of pulls of memory.  So every
+time a client is disconnected the server program can release that memory back into the client pool.
+
+To go along with the feature the developer should be able to annotate code with the number of times it will execute.
+Some code will only be executed once so the compiler can make optimizations based on this and also it can
+allow that code to allocate any memory it needs because it knows it will not cause memory leaks since it will only
+allocate memory once.
+
+
+
+Functions:
+Functions shouldn't be constained to have a stack setup.  Instead, the program can generate a function to be a section
+of code that needs a reference to it's arguments/parameters/data.
+
+
+
+CombinationTypes
+-------------------------------
+Take a language like D as an example.
+Let's say you had a template function that calculated the "limit pointer" of an array like this:
+
+T* limit(T)(T[] array) {
+  return array.ptr + array.length;
+}
+
+The generated code for this function will be identical no matter what the element type is.  The problem with
+using a template is that different instances of this function could be generated (binary code instances) that are identical.
+This causes unneccessary code bloat.  Instead of defining the function as a template, you could use a "CombinationType" like this:
+
+any* limit(any[] array) {
+  return array.ptr + array.length;
+}
+
+The compiler will automatically calculate the actual "logical return type" like this:
+
+char[] mychars;
+string mystring;
+
+auto mycharsLimit = limit(mychars); // mycharsLimit is a char*
+auto mystringLimit = limit(mystring); // mystringLimit is a immutable(char)*
+
+
+
+Example combination types:
+any*     // A pointer to any type.  You cannot derefernce an any* variable.
+         // The advantage of using any any* over a void* is there is no need for a cast.
+any[]    // A generic array type.  You cannot dereference an any[] array;
+
+anybyte  //
+char/byte // These types should be combination types for each/other
+
+
+
+Examples:
+
+In the following examples, I will replace funciton signatures with potential replacements
+that guarantee only one instance of the function will be generated.
+
+std.stdio
+
+File
+  Current: T[] rawRead(T)(T[] buffer);
+  New    : size_t rawRead(any[] buffer, size_t elementSize = any.sizeof);
+  Note   : it would be good to prevent the user from modifying the second argument passed
+           to this function (maybe use a private attribute on the second argument or something)
+
+  Current: void rawWrite(T)(in T[] buffer);
+  New    : void rawWrite(any[] buffer, size_t elementSize = any.sizeof);
+
+  Current: @trusted void setvbuf(void[] buf, int mode = _IOFBF);
+  New    : @trusted void setvbuf(anybyte[] buf, int mode = _IOFBF);
+  Note   : anybyte[] has more information than void[] and can create
+           nicer compiler messages and better type safety.
+
+  Current: size_t readln(C)(ref C[] buf, dchar terminator = '\x0a') if (isSomeChar!C && is(Unqual!C == C) && !is(C == enum));
+           size_t readln(C, R)(ref C[] buf, R terminator) if (isSomeChar!C && is(Unqual!C == C) && !is(C == enum) && isBidirectionalRange!R && is(typeof(terminator.front == (dchar).init)));
+  New    : size_t readln(ref anybyte[] buf, dchar terminator = '\x0a');
+           size_t readln(R)(ref anybyte[] buf, R terminator) if (isBidirectionalRange!R && is(typeof(terminator.front == (dchar).init)));
+
+Using CombinationTypes to optimize template instantiation.
+
+Let's say that you call the following:
+
+char[] mychars;
+string mystring;
+writefln("MyChars '%s'", mychars);
+writefln("Mystring '%s'", mystring);
+
+The generated code for these instances of the writefln functions are going to be identical.
+The compiler can use it's knowledge of combination types to create a combination instance
+of the writefln function.
+

@@ -1,0 +1,93 @@
+
+
+
+
+================================================
+Multiple Return Locations
+================================================
+Multiple return locations could be very useful for catching errors, or for something like a tokenizer
+If a function has multiple return locations, it will either accept each return location as it's 
+own poitner, or if it has alot of return locations the function will allocate a space for a return table pointer,
+where it will be indexed find the correct return location
+
+
+
+
+================================================
+Language support for jump tables
+================================================
+...
+
+
+=================================================
+ Logic Blocks
+=================================================
+
+Logic blocks are kindof like inline functions.
+
+Logic blocks need to know 2 things
+	1. Where to reference it's "Sticky Arguments"
+	2. Where to go once it's done
+
+There are three types of logic blocks and each one negotiates the information it needs at either compile-time or runtime in a different way.
+
+1. Inline Logic Block:
+	1. Resolves Sticky Arguments at compile-time
+	2. Goes to the next statement once it's done
+	An "Inline Logic Block" is compiled directly into the code where it is used. This provides the best performance but results in the most execution code if it is called enough times.  Be careful of this if the logic block has alot of machine instructions and is used alot.
+
+	When to use: Always unless (execution code size is an issue)
+
+	When to NOT use: If (execution code size is an issue) and (the logic block compiles into alot of execution code) and (the logic block is called many times)
+		Look at S * C, where S = execution instructions and C = number of times called, if S*C is comparable to your execution code size problem, you may want to make the Inline logic block into a Functionized Logic Block or a Jump Logic Block
+
+2. Jump Logic Block:
+	1. Resolves Sticky Arguments at compile-time
+	2. Goes to the negotiated return pointer at runtime
+	A "Jump Logic Block" is a logic block that has been compiled into an unreachable part of a function.  In other words, it occurs right after a jump statement, so they only way to reach it is to jump to it's first instruction.  A Jump Logic Block must have it's return pointer negotiated at compile time.  To call it, the function that declared it must setup it's return pointer, and then jump to it.  It is much faster than a function call because it doesn't have to setup it's variables and the Jump Logic Block doesn't have to switch the context back to the function who called it.  They both fun using the same function stack frame.  It's alot like a goto statement, except that the logic block itself negotiotes it's return address at runtime.  It is slower than an Inline Logic Block, but faster than a Functionized Logic block.
+
+	Note: It is only accesible to the function it is declared in.
+
+	When to use: ((execution code size is an issue) and (the logic block is used alot in a single function))
+
+3. Functionized Logic Block:
+	1. Resolves Sticky Arguments at runtime
+	2. Goes to the negotiated return pointer at runtime
+	A "Functionized Logic Block" is a logic block that has been turned into a function.  It's sticky arguments and return pointer become apart of the function's stack frame.  This is the slowest way to call a Logic Block but can result in the least amount of execution code if the Logic Block is used in different functions.
+
+	When to use: ((execution code size is an issue) and (the logic block is used alot in multiple functions))
+
+	WARNING: This will change the affect of a logic block modifying an argument value.  Maybe I should disallow this, or only disallow it with logic blocks that modify it's arguments.
+
+
+Note: Logic blocks don't have return values.  They're arguments are "sticky" so if it modifies one of it's arguments, it is modified in the function that uses it (unless it has been "Functionized")
+Note: Beware of code bloat...if a logic block becomes too big it could cause the code to grow out of control (unless you functionize it)
+Note: Logic blocks are typically small pieces of code.
+Note: Logic blocks should be highly tested, they should be highly efficient even it it results in code that is more unreadable and less maintainable.  Logic blocks are typically changed less often than functions.
+Note: Logic blocks should allow more control over the code...meaning that you could use the Stack Language in a logic block:)
+Note: Logic blocks can have constant specifiers that say which version of the logic block to create
+	- Note that a logic block can define it's own enum's to specify the type of logic to compile
+	- i.e. you could create a logic block that compare integers/or unsigned integers like this
+		logic compare<type:(signed {t = "int"} unsigned {t = "uint"})>(type.t a, type.t b, type.t result) {
+			result = (a < b) ? -1 : 1;
+		}
+
+
+NewTerm: A "Sticky" argument is an argument of a logic block.  Once the code is compiled a Sticky argument "stuck" to the variable it references.
+
+
+A Jump method is the same as a method except it can be called without modifying the current state or "stack"
+
+
+A JumpClosure is a set of jump methods that share the same state.  Beacuse they share the same state, they can jump
+to eachother without having to setup a method call!  A Jump closure acts as a regular Method call:)
+
+Obtaining Logic Blocks from another library:
+When you compile code with logic blocks, the logic blocks should be able to be exported so that another program can import the logic block library and use it during compilation to resolve the logic blocks!!!
+
+================================================
+Important Idea: Level 0 Class Functions
+================================================
+Each instance of the class could create code for a special Level 0 class function that resolves it's arguments at compile time to the fields in the class.
+
+

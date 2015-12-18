@@ -1,0 +1,22 @@
+
+Need to list out the capabilities of the computer.
+This list needs to have a heirarchy, and each computer should have fit into
+it's own set of categories.  Computer A might be able to do X and Y, whereas
+Computer B might only be able to do X and Z.  The language may have features
+that need a computer who can do X, Y and Z.  
+
+
+Capabilities syntax:
+M:[0-9]*  represents memory location x
+          i.3. M:0 represents memory location 0
+
+
+expressions:
+		  
+		  
+Level 0 Capabilities:
+
+
+ASSIGN M:x M:y     Copies value from M:y to M:x
+
+CHECK  <expression>

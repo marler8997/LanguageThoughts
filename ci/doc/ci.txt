@@ -1,0 +1,315 @@
+
+Compile-Time Information
+    _________   ____________
+   \   ____  \  \____   ____\
+    \  \   \__\      \  \
+     \  \             \  \
+      \  \    ___      \  \
+       \  \___\  \   ____\  \____
+        \_________\  \___________\
+
+================================================================================
+Runtime Determined Stack Allocation
+================================================================================
+In programming languages today, most language supported stack allocations along with the sizes of allocations must be known at compile time. If a buffer size is not known until runtime, then it must be allocated on the heap.  This takes work away from the compiler and moves it to the Garbage Collector at runtime.  However, heap allocation has other implications besides supporting variable sized buffers.  Everything that is allocated on the heap does 2 things differently than the stack
+   1) The lifetime is not tied to a function, but is released when someone tells the heap to free them (Programmer or Garbage Collector)
+   2) The heap will eventually need to be garbage collected to clean/reorganize discontiguous memory.
+
+These disadvantages to heap allocation are a necessary evil to support a function that allocates memory to be used once the function has gone out of scope.
+However, heap allocation shouldn't be necessary just because a buffer size isn't know until runtime, it should only be necessary when a buffer is meant to survive the life of a function.
+Many times programs only need a variable sized buffer for the life of a function. Since their is no way to allocate variable sized buffers on the stack, they must allocate them on the heap and remember to include a "free" statement before every return from the function.  When you get into exceptions it can be even more complicated to make sure all memory is freed because the function can return at any point.
+
+Because the programmer requires a variable amount of memory at runtime, they are forced to used the heap and forced to deal with it's other consequences of managing the cleanup of the memory and the eventual garbage collection.
+
+================================================================================
+No heap?
+=================================================================================
+If a buffer is not needed once it's declaring function ends, then memory allocation on the stack is preferable to allocation on the heap because heap allocation adds work for the garbage collector and the programmer must make sure that every exit path frees the buffer to prevent memory leaks.  However, because heap allocation size can be changed at runtime and stack allocation cannot, it is used even when it's life is tied to the declaring function.
+
+Because the C language misses alot of opportunities to allow the programmer to input critical compile time information, and also analyze the information it already has, less is known at compile time about buffer sizes and memory requirements.  This compounds the misuse of heap allocation.
+
+If a language does allow the programmer to provide the right kind of information and the compiler analyzes this information in the correct way, many maximum buffer sizes can be determined at compile time, which saves time allocating and freeing dynamic memory.
+
+In the cases that buffer sizes really should be dynamic at runtime, a compiler/language can implement DynamicSized Stack Buffers.
+
+How the CI Language Handles Memory
+* Every function allocates what it needs on the stack
+* Dynamically sized memory is still possible with Dynamic Sized Call Stacks (aka Dynamic Sized Stack Buffers)
+* Note: since CI does not have a heap, all the memory that would normally go to the heap will now go to the stack instead.
+
+================================================================================
+Memory Declaration
+================================================================================
+C is a very straight forward, declarative language.  The abstraction from machine instructions is very minimal which allows for maximum control, but slower development times due to the required verboseness.  Some higher level languages do not require the programmer to specify how memory is handled and instead gives that job to the compiler/interpreter/runtime.  This can decrease development time but can also result in slower performing code or memory waste.  CI provides the same level of control as a low level language like C, but also provides higher level features that allow for faster development times and more maintainable code.
+
+================================================================================
+Programs
+================================================================================
+
+Others: A program has one entry point
+CI    : A Program can be entered at any function, but a program can specify it's expected entry points with one being the default.
+
+Others: The entry point handles an array of strings and returns an integer
+CI    : There is no restriction of function parameters or return values on function entry points.
+
+Others: Every program has STDIN/STDOUT/STDERR
+CI    : Programs do not neccesarilly need to have STDIN/STDOUT/STDERR. Some programs need more io streams and some need less.
+        Every entry point can specify how many output streams/input streams and io streams it needs.
+
+* The Operating system (or the set of CI language tools) will provide tools to call CI programs from any function and specify function arguments on the command line.
+   - Let's say you have a program cat.
+     The default entry point could return a String that contains a potential error, and it could have an input stream and an output stream
+
+================================================================================
+Functions
+================================================================================
+* Function signatures will not only include Name/ReturnType/ParameterTypes, they include
+   - FunctionName
+   - ReturnType/ParameterTypes
+   - Optional Parameter Names/Default-Values
+   - If the function call stack is dynamically sized, then the information needed to know how to allocate the call stack will be needed.
+   - Function MAC's (Function macros used by the caller to check their parameters (at compile time...and maybe even at runtime))
+      * If one of your function requires that the argument is not null, you can publish this as a Function MAC.  The caller can verify this at compile time or runtime.  Note that if the parameter that the caller is passing into the function is a variable that is also not null based on it's own Function MAC, then you have saved an extra NULL check!
+
+* Functions have both required and optional arguments.  The required arguments are specified using an ordered list, but the optional arguments may or may not be specified so they are implemented using "Switches" and "Name-Value Pairs".
+	Switches: A switch argument is a boolean argument. The actual function call stack will always include the switches, however the code calling the function will have a default "unset" value to pass in. When the switch is "unset", the caller will use the default value (either true or false), and when the switch is "set" the caller will use the opposite of the default value.
+	Optional Value Arguments: An optional argument is also always on the call stack and also always has a default value. When the argument is not specified, the default value is passed in, otherwise the specified value is used.
+
+================================================================================
+More Compile-Time Information (CI) and Compile-Time Analysis
+================================================================================
+
+* The language takes advantage of knowing every buffer size it can possibly know at compile time
+	- This means that SO MUCH COMPILE TIME CHECKING can be done!
+	- When a buffer is passed to a function to be used for output, the function should advertise at compile time the minimum required length (if there is one).  Then at compile time, the caller will be able to verify that the buffer it is passing is the minimum length.
+
+* Developers will be able to create UDCTCs (User Defined Compile Time Checks)
+
+* Make a special type of function argument that allows the caller to change the function's buffer size.  This will allow the caller to change the amount of memory the function has for a particular buffer:)
+	- This means that functions can have still have a variable amount of memory at runtime!
+	- You can still have variable size buffers because the caller can change the size of the functions call stack!
+
+* Create ALOT of libraries to deal with strings
+	Why? Strings are how humans interact with data and programs
+================================================================================
+Logic Block
+================================================================================
+* A "Logic Block" is a section of code that can be called like a function but is kinda like an inline function (kinda like)
+* When you return in a Logic Block you return from the entire function.
+* Use the 'end' keyword to leave a logic block.
+* Logic blocks can have multiple exit locations.
+
+================================================================================
+Types
+================================================================================
+* A "Type" is an allocation of memory (int2 is 2 bytes, IPAddress is 4 bytes)
+* Except for a few special types, every type is the same size on each platform.
+* Every "Type" must have an ascii string representation with corresponding Parse (TryParse) and ToString methods.  It is also VERY IMPORTANT that the maximum length of a string representing that type is KNOWN at compile time. This way, the amount of memory needed to store that type as a string is known at compile time.
+
+Platform Types:
+	word/uword: Platform word size i.e.
+            : x86 (sizeof(word) == 32)
+            : x64 (sizeof(word) == 64)
+
+Primitive Types (Size if same on all platforms):
+	bool
+		- Numeric Version "0" and "1"
+		- Word Version regex([fF].*) is false and everything else is true
+	byte (uint1)
+		- Decimal Version "0" "1" ... "255"
+		- Hex Version "0x0" "0x00" "0xFF" etc.
+		- Binary Version "0b0" "0b000" "0b1001" "0b11111111" etc.
+	sbyte (int1)
+		- ...
+	uint2 (unsigned 2 byte type)
+	int2 (signed 2 byte type)	
+	
+	uint4 (uint4)
+	int4 (int4)
+
+	bool ParseBool(const char *string);
+	bool ParseBool(const char *string, byte versions);
+	// NOTE: BOOL_STRING_ALL is defined to be (BOOL_STRING_NUMERIC | BOOL_STRING_WORD)
+	
+	void ToString(char *buffer, 
+
+
+
+* TRAPS: A section of code that will always get executed on certain conditions:
+	1. at the end of the current function
+	A Function Trap can be called explicitly, and then it won't be called at the end of the function.
+	This functionality will be very usefull when opening/closing handles.
+* Alot more inline support
+* I like methods being CamelCase:)
+* Know when to use a different method vs adding an argument to a method (example, the ls command and the ls -l command may or may not go in the same method, it would depend on how much functionality they share)
+* ABILITY TO ADD COMPILE TIME RESTRICTIONS!!!!!
+* Classes
+	- The implementation will just use structs :)
+	- Add a specifier to a field that only allows the field to be written to by the structs "class methods"
+
+        - Maybe instead of classes, the language will use a different concept...like, every function will specify a "variable set", sort of like
+          a classes fields, but they could be associated with a class or from some global location.
+
+* String Formatting:
+	%i = int4
+	%u = uint4
+	%c = print ascii character
+	%s = null terminated string
+	%x = uint4,hex
+	%X = uint4,HEX
+	
+	Special fmtstring and fmtmem types are fixed buffers allocated on the stack whose size is determined by how they are used in the function.
+		- The size of fmtstring and fmtmem is equal to the maximum size of the minimum size of all the functions they are passed into.
+
+	- the 'formatter' keyword is a function specifier that tells the compiler that this function is used for printing. All formatter functions must have the signature:
+		formatter char * <FunctionName>(char * output, <TypeToPrint> type); or
+		formatter char * <FunctionName>(char * output, <TypeToPrint> type, byte formatType);
+		formatter char * <FunctionName>(char * output, <TypeToPrint> type, addr pointerToPrintFormatStructure);
+	At compile time, all formatter functions must be able to know the MAXIMUM amount of characters they can possibly print.  The return value of any formatter function is a pointer to the address after the last address that was written to by the function. formatter functions can then be sent as a function pointer to a write function to print the type they are meant for!!
+
+Defining a toString/parse function pair
+----------------------------------------
+a type has a set binary representation.  There should be a way to define the toString and parse method pairs like this:
+
+IPAddress Example:
+  4 Bytes:  {0}.{1}.{2}.{3}        (default)
+            0x{0:x}{1:x}{2:x}{3:x} (lowerCaseHex)
+            0x{0:X}{1:X}{2:X}{3:X} (upperCaseHex)
+  
+int4 example:
+  4 Bytes: {0-3}     (default)
+           0x{0-3:x} (lowerCaseHex)
+           0x{0-3:X} (upperCaseHex)
+
+
+enums don't need a toString/Parse method
+
+IPAddress and Port example:
+  6 Bytes: {0}.{1}.{2}.{3}:{4-5}  (default)
+
+
+
+
+================================================================================
+Error vs Exception
+================================================================================
+* Errors are 'reported' whereas Exceptions are thrown	
+* Error Handling
+	- RICH BUILT IN ERROR HANDLING SUPPORT!
+	- All errors that do not allow a function to complete should be 'thrown' up the call stack and eventually provide a trace (preferably the trace should not only include the call stack but also the parameter values for each function in the call stack)
+	- The OS should be able to "UNWIND" a programs call stack. This may require the program to add special locations on the stack that allow a program to be able to look at the current stack and be able to deduce the trace.
+	- Functions can specify an "error handler"
+	- There are different kinds of function errors such as
+		1. ArgumentError: Function could not complete because an argument was invalid.
+			- The source code will say which arguments were invalid and can specify an optional message which says why they were invalid. Then the compiler will generate code to include the argument values/sourcecodenames/message/callstack in an exception.
+		2. EnvironmentError: There is something wrong with the execution environment at this time to be calling this function with the given parameters.
+			- Supply a message specifying what is wrong with the environment then throw an exception with that message.
+		3.
+		
+* Built in thread support
+		
+* This language will have built-in support for the folling patterns
+	- Handles (handle type specifier)
+	- 
+	
+* structs/types/inheritance
+
+* The buffer class is 2 pointers, a pointer to the beginning of the buffer and a pointer to the address after the last character in the buffer.
+	type struct {byte *start,*end;} buffer;
+
+================================================================================
+Pointers, Arrays and Buffers
+================================================================================
+
+<type>         *ptr;    // Just a pointer to a <type>, could be a pointer to a 'C like' array of <type>s
+<type>_arr    array;    // A pointer to a <type>, and a uword which represents the length of the buffer. (length is not in bytes, or should it be?)
+<type>_buff  buffer;    // A pointer to a <type>, and a pointer to the first address not in the buffer
+
+example:
+
+int4 staticArray[1000];
+
+int4 *arrPointer = staticArray;
+int4_arr arrArray = {staticArray,1000};
+int4_buff arrBuffer = {staticArray,staticArray+1000};
+
+The reason for including the _arr and _buff postfixes is to handle common patterns.
+Question is, are _arr and _buff equivalient, meaning...is one better than the other?  Maybe I should only include one?
+
+
+================================================================================
+Things that bug me
+================================================================================
+1. Missing instructions from the language
+   - instruction to get the position of the first 1 or 0 in a block of memory
+   - instruction to count the number of 1's in a word
+
+2. No support for jump tables (index tables). How will you know if your switch statement will really become a table?
+   Having some sort of jump table syntax will allow the programmer and compiler work together by allowing the compiler to throw
+   errors when a choice must be made in how to handle the jump table.
+
+================================================================================
+Jump Table
+================================================================================
+
+jump(value) {
+   default {
+     print("Unknown Value {0}", value);
+   } 90 {
+     ...
+   } 100 {
+     ...
+   } 101 {
+     ...
+   } 
+}
+
+
+====================================================
+Examples
+====================================================
+
+string sqlQueryString; // The size of this string buffer is calculated
+                       // by seeing how it is used later on
+mem sqlQueryMem; // The size of this string buffer is calculated
+                 // by seeing how it is used later on
+				 
+uint8 userid = 4;
+
+uint4 stringLength = sfmt(sqlQueryString, "SELECT * FROM users where userid=#0", userid);
+uint4 memLength = mfmt(sqlQueryMem, "SELECT * FROM users where userid=#0", userid);
+
+// NOTE: memLength == stringLength - 1 (because string needs an extra character for the null)
+
+// the size of sql query will be determined from this call to fmt
+// it will be the size of the 
+
+
+
+
+
+
+================================================================================
+Notes
+================================================================================
+
+OutOfMemory:
+Whenever stack memory is requested, check the size left on the stack, if, after
+the new memory is allocated there is not enough memory for throwing an out of
+memory exception, then immediately throw an out of memory exception.
+
+
+Functions can throw errors
+
+Function publishes argument constraints that can be checked at compile time (or runtime).
+These constraints can be explicit or implicit (implicit could come from the argument being passed to a sub function (unmodified) with its own constraint).
+
+
+Pluggable Function
+   The function's argument locations on the stack are rewritten at runtime (The actual instructions are modified)
+
+Classes of functions
+   1. Generator:
+      Usually very little parameters
+      Returns 1 value
+      Never fails (cannot fail)

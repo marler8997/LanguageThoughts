@@ -1,0 +1,306 @@
+ 
+Every component needs the following:
+1. ContentSize    (width and height of the content)
+2. RenderLocation (Global x/y location of TopLeft corner)
+3. RenderWindow   (Global window the component is allowed to draw)
+
+
+RenderLocation
+     \
+      \     RenderWindow
+       \----------------------
+       |\                     |
+       | \-----------------------------
+       | |         My Content |        |
+       | |only a part of my co|        |
+       | |is visible.         |        | ContentHeight
+        -|--------------------         |
+         |                             |
+          -----------------------------
+                   ContentWidth
+
+
+Data needed for drawing
+
+ContentSize: The width and height in pixels of a component's content.
+SizeLimits: The min/max width/height in pixels that a component will allow for its content
+AvailableContentSize: The available width and height in pixels given by the parent
+RenderWindow: The "cuttoff" global x,y,width and height in pixels that tell the component the square in which it can render
+RenderLocation: The global x/y location of the bottom left corner of a component.
+ChildRelativeLocation: The relative location of the child to the parent
+   Format:
+      <axis>:<parent-section> <offset-from-parent-section> <child-section>
+      x:(left|center|right) [<integer>] [(left|center|right)]
+      y:(bottom|middle|top) [<integer>] [(bottom|middle|top)]
+   Examples:
+     x:left  ,x:left   0,x:left   left  ,x:left   0 left   // child.x = parent.x
+     x:right ,x:right  0,x:right  right ,x:right  0 right  // child.x = parent.x + (parent.width - child.width)
+     x:center,x:center 0,x:center center,x:center 0 center // child.x = parent.x + (parent.width - child.width)/2
+
+     x:left   10,x:left   10 left   // child.x = parent.x + 10
+     x:right  10,x:right  10 right  // child.x = parent.x - 10 + (parent.width - child.width)
+     x:center 10,x:center 10 center // child.x = parent.x + 10 + (parent.width - child.width)/2
+
+     x:left   10 right  // child.x = parent.x + 10 - child.width
+     x:left   10 center // child.x = parent.x + 10 - child.width/2
+     x:right  10 left   // child.x = parent.x - 10 + parent.width
+     x:right  10 center // child.x = parent.x - 10 + parent.width - child.width/2
+     x:center 10 left   // child.x = parent.x + 10 + parent.width/2
+     x:center 10 right  // child.x = parent.x + 10 + parent.width/2 - child.width
+
+
+
+Properties:
+   1. BackgroundColor
+   2. Width:
+         Independent(Unsigned Integer)
+         ContentDependent(Left/Right Unsigned Integers representing how many pixels beyond the content left and right boundaries the component should occupy)
+         ParentDependent(Left/Right Unsigned Integers representing how many pixels between the parents left and right boundaries the component should leave)
+   3. Height:
+         Independent(Unsigned Integer)
+         ContentDependent(Top/Bottom Unsigned Integers representing how many pixels beyond the content top and bottom boundaries the component should occupy)
+         ParentDependent(Top/Bottom Unsigned Integers representing how many pixels between the parents top and bottom boundaries the component should leave)
+
+Label {
+   No Width and Height Properties because they are dependant on font/text
+}
+
+
+The Top Level Component always has an independent width and height.
+Whenever the TopLevelComponent's size changes:
+   1. Halt all resize events
+   2. Recalculate Render Variables
+   3. Redraw
+   4. Continue resize events
+
+
+------------------------------------------------------------
+Rules
+------------------------------------------------------------
+A component can only render inside its content window and a child
+can only render inside a subwindow of it's parent's content window
+
+
+
+
+
+
+
+
+
+
+
+
+Sytax:
+  <component-name> (<properties>) {
+    <child-components>
+  }
+
+------------------------------------------------------------
+Size
+------------------------------------------------------------
+Not all components have a size property that can be set by a user, for example, a label size is determined
+by its font and text, but most components size can be set.
+
+Size        | Meaning
+------------------------
+500         | width: 500px, height: 500px
+20 90       | width: 20px , height: 90px
+c           | width and height are the minimum amount to contain the content
+600c        | width: 600px, height is the minimum amount to contain the content
+c(4)        | width and height are the minimum amount to contain the content plus 4px in each direction
+c(1 2)c(3 4)| width is the minimum amount to contain the content plus 1px on the left and 2px on the right and
+            | height is the minimum amount to contain content plus 3 px on the top and 4 px on the bottom
+c(1 2 3 4)  | same as previous (left right top down)
+p           | width and height are the maximum amount allowed by the parent
+p20         | width is maximum amount allowed by the parent and the height is 20px
+p(5)        | width and height are the maximum amount allowed by the parent minus 5px in each direction
+f           | (f >= p and f >= c) width and height will either be the maximum amount allowed by the parent or the
+            | minimum amount to contain the content, whichever is larger
+s           | (s <= p and s <= c) width and height will either be the maximum amount allowed by the parent or the
+            | minimum amount to contain the content, whicher is smaller
+
+
+# means height is "fixed"
+c stands for "children"
+p stands for "parent"
+f stands for "fill"
+s stands for "squeeze"
+
+The size of the root level box is always fixed numbers (i.e. 800 600).
+
+
+Alternative to C/P
+-------------------------
+As of now, a parent component can have a size relationship with its children by using c/f/s.
+Maybe a better idea...the actual tree structure should determine the size relationships?
+Just a thought....
+
+
+------------------------------------------------------------
+Overflow
+------------------------------------------------------------
+
+A component will never render outside of it's content window.
+
+When a component can have children and it's child content size is larger than the components size, then
+the component has overflow.
+By default, overflow is hidden.
+
+Overflow | Meaning
+----------------------------------
+h        | hide overflow
+s        | when the content is too large, show scrollbars in the x and y direction
+a        | always show scrollbars in the x and y direction
+ha       | hide overflow in the x direction and always show scrollbar in the y direction
+
+------------------------------------------------------------
+The x and y components
+------------------------------------------------------------
+
+x's and y's are equivalent except that their x-axis and y-axis effects are switched.
+
+a y component has an ordered list of child components from top to bottom (an x component is from left to right).
+
+Properties
+   size(required)
+   minWidth:
+   minHeight:
+   cx: (ChildrenRelativeLocationX) Where to locate the children in the x direction,
+   cy: (ChildrenRelativeLocationY) Where to locate the children in the y direction,
+   spacing: number of pixels between children (in the y direction),
+
+Restrictions:
+   If a y component's height is c     , then no direct child component's height can be p or f
+   If a y component's height is f or s, then no direct child component's height can be p
+
+  If a y component's width is c      , then at least one child component's width must not be p or f
+  If a y component's width is f or s , then at least one child component's width must not be p
+
+CalculateRenderVariables:
+  1. Figure out the maximum height this component can be (if the height is c (children) or f (fill) then the height is limitless).
+  2. Loop through each child and figure out how much height will be taken up by children who's height is independent of the parents
+     and figure out how many components are requesting the maximum amount allowed by the parent.
+  3. If the y components height is fixed or 
+  1. Loop through each child and calculate their render variables by stacking them top to bottom and adding the spacing.
+
+------------------------------------------------------------
+repeater
+------------------------------------------------------------
+A repeater is a list of objects (tabular data) applied to a set of box layout components
+
+a has an ordered list of child components
+
+Example:
+  people = <Name   ,Age,Gender:
+           'Johnny',25 ,Male  :
+           'Amy'   ,23 ,Female:
+           >;  
+
+  y {
+    repeater(people) {
+      xbox {label('Name: ') Name label('Age: ') Age label('Gender: ') Gender}
+    }
+  }
+
+
+
+
+
+
+
+
+
+ContentDependentSizeComponent
+   Has  ContentSize
+   Need RenderLocation
+   Need RenderWindow
+
+FixedLabel : FixedContentSizeComponent
+   Note: ContentSize calculated from font/text
+
+FixedImage: FixedContentSizeComponent
+
+FixedBox : FixedContentSizeComponent
+   Has  OverflowScroll
+   Has  ChildRelativeLocation
+   Set child.AvailableContentSize using ContentSize
+   Need RenderWindow
+      Set child.RenderWindow using ContentSize/RenderWindow and taking into account scrollbars if needed
+   Need RenderLocation
+      Set child.RenderLocation using RenderLocation and ChildRelativeLocation
+
+FixedYBox : FixedContentSizeComponent
+   Has  OverflowScroll
+   ForEachChild
+       Has  ChildRelativeLocationX
+ 
+   Set child.AvailableContentSize using ContentSize
+   Set child.RenderWindow using ContentSize taking into account scrollbars if needed
+   Need RenderLocation
+      Set child.RenderLocation using RenderLocation and ChildRelativeLocation
+
+      
+
+FillComponent
+   Has  SizeLimits
+   Need AvailableContentSize
+       Calculate Size from AvailableContentSize and SizeLimits
+   Need RenderLocation
+   Need RenderWindow
+
+FillSquare : FillComponent
+
+
+
+
+Square(DynamicSize)
+   Location: given by the parent
+   ContentSize: combination of local properties/parent settings.
+      boolean fillX,fillY; int width,height;
+      if(fillX) {
+         if(width == 0) ContentSize.x = parent.ContentSize.x
+         
+      }
+      if(size == 0) {
+
+      }
+      if(size > 0) {
+    local properties, if the box has fill set, it will fillx/y if its size is smaller, other
+
+
+
+
+
+Examples:
+
+  Created a centered content:
+    // By default every root level box is a ybox where cx:center,cy:top,spacing:0
+    // y(cx:center,cy:top,spacing:0) { ... }
+
+    // Now lets make a box to make sure all content never gets larger thatn 800 pixels wide
+    y(800c) { // 800 means width is fixed to 800 pixels and c means height is content dependent
+      // content...
+    }
+
+
+  Pandora.com:
+    y(f) { // Makes sure the page width never goes too small to fit the content
+
+      // top bar
+      x(p50;middle) {
+        left: img('/images/pandoralogo.png')
+        center: Radio
+        right: username | Upgrade
+      }
+      
+      // control bar
+      x(p100;middle) {
+        left: label('New Station') input
+        center: y(cp) {
+                  x(c;center) {image('/img/thumbsdown.png')image('/img/thumbsup.png')image('pause.png')...}
+                  x(c;center) {label('playtime') img('/img/playbar.png') label('playtimeleft')}
+                }
+        right: x...
+      }
+    }

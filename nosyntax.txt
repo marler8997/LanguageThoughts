@@ -1,0 +1,57 @@
+New Language
+
+This langauge attempts to decouple the language syntax from the semantics. It accomplishes this by defining the semantics using a very simple syntax and giving the job of creating a syntax up to other parts of the system.  This is different from other languages which have a the syntax tightly coupled with the semantics.  This is restrictive since the syntax may make it difficult to add to the semantics.
+
+Start by defining the primitive structures:
+
+(<name> <required-args>... (operation <args>))
+
+
+
+Used to attach a comment to things
+(comment <comment-string> <things>...)
+(comment <comment-string> <things>...)
+
+Comment on the next thing only
+/* <comment-string> */ <thing>
+
+// <comment-string> NEWLINE <thing>
+
+(assign <destination> <source>)
+(allocate <size> <name>)
+(decl <type> <name>)
+
+(program <instructions>...)
+
+
+
+A function is a block of code that operates on a stack allocated context.
+(function <input-args> <output-args> (block <body>))
+
+
+(scope (vars <vars>...) <statements>)
+
+(call <function-name>)
+
+Types:
+
+ubyte: unsigned byte
+
+(array-length <type>) OR (ar <type>)
+
+// The Hello World Program
+(console-program
+
+(function main () (void) (body
+	(call write "Hello, World!\N")
+))
+
+)
+
+(console-program
+
+(function main ( ((ar (ar ubyte)) args) ) (int) (body
+	(call write "Hello, World!\N")
+))
+
+)

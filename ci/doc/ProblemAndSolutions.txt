@@ -1,0 +1,254 @@
+
+
+=================================================
+=== Problem: Math library =======================
+=================================================
+
+Power:
+
+	logic power(integer base, integer power, out rational result) {
+		//
+		// TODO: write this logic
+		//
+	}
+
+	logic (integer base, integer power) power(integer result) : power-out-of-range {
+		natural powerAsNatural = integer-to-natural(power) {
+			power(base,powerAsNatural,result);
+		} (out-of-range) {
+			return:power-out-of-range;
+		}
+	}
+
+	logic (integer base, natural power) power (integer result)
+	{
+		if(power == 0) {
+			result = 1;
+		} else {
+			result = base;
+			repeat(power) {
+				result = result * base;
+			}
+		}	
+	}
+	
+	//
+	// stack language
+	//
+	logic (base power) power (result) {
+		base power 0
+		     ==
+			 if
+			 1
+			 else
+			 power
+			 repeat {
+			 
+			 }	     
+	}
+	
+	function (string[] args) shell-entry {
+
+		if(args.length != 2) {
+			("Expected 2 args, but got {0}",args.length) > println;
+		}
+	
+		integer base = integer.parse(args[0]);
+		natural power = natural.parse(args[1]);
+		integer result;		
+		
+		
+		(base,power) > power > result; // this tells the logic 'power' that it expects 
+		                               // base to be unmodified, but it can modify power 
+								       // and result
+
+		("{0}^{1} = {2}",base,power,result) > println;
+	}
+
+	//NOTES: During compilation, the compiler will be able to determine the following:
+	1. the 'base' fixture is never assigned to, therefore it doesn't matter if the caller
+	   specifies whether or not the logic block should preserve it's value.
+	2. The 'power' fixture could be modified by the 'repeat' block, and therefore the caller's
+	   specification on whether or not it can be modified will affect the logic
+	3. The 'result' is an out fixture, and therefore MUST be modified in all branches of the logic
+	   block.  Failing to do so should result in a compilation error.	   
+
+Swap:
+	logic <T> (T a, T b) swap {
+		T temp = a;
+		a = b;
+		b = temp;
+	}
+
+	function (string[] args) shell-entry (integer return-code) {
+		integer a = 10;
+		integer b = 20;
+		
+		(a,b) > swap;
+		
+		a > println;
+		b > println;
+	}
+
+	// NOTES: Generics!  Notice that this specifies that a and b can be any type as long as
+	// they are the same type.
+	// Optimization: If the caller of 'swap' has a variable that is unused after the call to swap, then
+	// the swap logic block can use that variable instead of another one:) i.e.
+	//    entry {
+	//        integer a = 10, b = 20;
+	//        swap,a,b;
+	//        //print(a);
+	//        print(b);
+	//    }
+	// Now that print(a) is commented, the swap logic block will use the 'a' variable location for the 'placeHolder'
+	// variable.  This is because a is unused now after placeHolder is used.  Note that if we commented out print(b),
+	// this would not be the case since b is used int the logic block "a = b;".
+	//
+	//
+
+
+ErrorChecker:
+	logic check-input(integer a) : bad {
+		if(a < -10) {
+			return:bad;
+		}
+	}
+
+	entry {
+		integer i = 5;
+
+		check-input:i {
+			print("check-input returned good");
+		} bad {
+			print("check-input returned bad");
+		}
+	}
+
+	// NOTES: This logic has 2 different return locations
+
+
+
+Tokenizer:
+
+	// tokenizer to recognize [0-9]* , + , - , * , / , \n
+
+	enum TokenType {EOF, PLUS, MINUS, MULTIPLY, DIVIDE, NUMBER};
+
+	//
+	// stack language (no types)
+	//
+	logic (c)is-digit(result) {
+	                 // stack: c
+		'0' >=       // stack: <bool>
+		c '9' <=  // stack: <bool> <bool>
+		&&           // stack: <bool>
+		
+		// '0' >= c '9' <= &&
+	}
+	
+	//
+	// stack language2 (no types)
+	//
+	logic (char)is-digit(result) {
+		stack {
+			char '0' >=
+			char '9' <=
+				&&
+			if{true}else{false}
+		}
+	}
+	
+	//
+	// stack language3
+	//
+	logic (char)is-digit(result) {
+		char '0'
+		>= char '9'
+		   <=
+		&&
+	}
+	
+	logic (char c)is-digit(bool result) {
+		result = c >= '0' && c <= '9';
+	}
+	
+	
+	logic next-token(Stream stream, out TokenType tokenType, out char-buffer buffer) : uknown-char {
+		char c = stream.get-char();
+		
+		c > switch :
+			('\0') {
+				tokenType = TokenType.EOF;
+			} ('+') {
+				tokenType = TokenType.PLUS;
+			} ('-') {
+				tokenType = TokenType.MINUS;
+			} ('*') {
+				tokenType = TokenType.MULTIPLY;
+			} ('/') {
+				tokenType = TokenType.DIVIDE;
+			} {
+				(c) > is-digit > if {
+					tokenType = TokenType.NUMBER;
+					buffer.empty();
+					buffer.add(c);
+					
+					for(c = stream.get-char(); is-digit(p c) returns (true); c = stream.get-char()) {
+						buffer.add(c);
+					}				
+				} else {
+					return:unknown-char;				
+				}
+			}
+	}
+	
+	
+	//
+	// INSTEAD OF THIS LOGIC, DO THIS
+	// 
+	macro-mapping CHAR-TO-TOKEN-TYPE { 
+		('\0', TokenType.EOF),
+		('+' , TokenType.PLUS),
+		('-' , TokenType.MINUS),
+		('*' , TokenType.MULTIPLY),
+		('/' , TokenType.DIVIDE)
+	}
+	
+	
+	logic next-token(Stream stream, out TokenType tokenType, out char-buffer buffer) : uknown-char {
+		char c = stream.get-char();
+		
+		switch(c) {
+			case macro:CHAR_TO_TOKEN_TYPE[0]:
+				tokenType = macro:CHAR_TO_TOKEN_TYPE[1];
+			default:
+				is-digit(p c) (true) {
+					tokenType = TokenType.NUMBER;
+					buffer.empty();
+					buffer.add(c);
+					
+					for(c = stream.get-char(); is-digit(p c) returns (true); c = stream.get-char()) {
+						buffer.add(c);
+					}					
+					
+				} (false) {
+					return:unknown-char;
+				}				
+		}
+	}
+
+
+
+
+	entry {
+		nextToken,tkn (end-of-file) {
+			
+		}
+		
+		
+	
+	}
+	
+	
+
+	

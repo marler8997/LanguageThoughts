@@ -1,0 +1,679 @@
+
+
+Potential Language Names:
+nuke: You are nuking all current languages with a brand new language that can do alot of dammage
+
+This new language is all about abstracting the complex logic away.
+
+It allows the creation of logic patterns that can be compiled to a statement language like C.
+
+
+Primitive Types
+-------------------------------------
+WORD is the number of bytes the system uses for a pointer. In a 32 bit system WORD=4, in a 64 bit system WORD = 8.
+
+bool       { 1 bit }
+pointer    { WORD bytes }
+pointer<T> { WORD bytes }
+
+abstract number;
+
+float             : number   { 4 bytes }
+double            : number   { 8 bytes }
+
+abstract integer  : number;
+abstract signed   : integer;
+abstract unsigned : integer;
+
+pint              : signed   { WORD bytes }
+puint             : unsigned { WORD bytes }
+
+byte              : unsigned { 1 byte  }
+sbyte             : signed   { 1 byte  }
+short             : signed   { 2 bytes }
+ushort            : unsigned { 2 bytes }
+int               : signed   { 4 bytes }
+uint              : unsigned { 4 bytes }
+long              : signed   { 8 bytes }
+ulong             : unsigned { 8 bytes }
+
+
+*Note: this language should support dynamic sized stack buffers
+
+Type Group
+-------------------------------------------
+A type group is a grouping of types together along with names (similar to a C struct).
+However, a group doesn't necessarily specify the order of the types or that the types are together in memory.
+Furthermore, some variabes in the group may even be compiled away.
+You will use a group when you have a set of variables that go together.
+It is simply a hint to the compiler that these two variables are a group.
+
+Example:
+  group { pointer pointer; uint length } Buffer;
+
+  you may now declare a Buffer just like a type.
+
+  Buffer b = {p,32};
+
+
+
+Common Type Groups
+-------------------------------------------
+abstract group {pointer pointer;} Buffer;
+group { pointer limit;} LimitBuffer     : Buffer;                    // length = limit - pointer
+group { L length;     } LengthBuffer<L> : Buffer where L : unsigned; // limit  = pointer + length
+
+OR
+
+group {
+  pointer pointer;
+  pointer limit : pointer + length;
+  unsigned length : limit - pointer;
+} Buffer;
+
+
+
+
+
+abstract group {pointer<T> pointer;} Buffer<T>;
+group { pointer<T> limit; } LimitBuffer<T>    : Buffer<T>;
+group { L length;         } LengthBuffer<T,L> : Buffer<T> where L : unsigned;
+
+// When you use an instance of the Buffer class, you may use either the limit or the length.
+// If you use buffer.limit, it will use the LimitBuffer instance, if you use
+// buffer.length it will use the LengthBufer instance.  If you use both, the compiler will determine the best solution.
+
+LimitBuffer {
+   
+   logic each<T> {ItemBlock(T item)} {
+      for(pointer p = this.pointer; p < this.limit; p += sizeof(T)) {
+         ItemBlock((T)*p);
+      }
+	 
+      // Usage:
+      // b.each(uint item) {
+      //   print(item);
+      // }
+      // b.each(byte b) {
+      //   print(b);
+      // }
+   }
+   logic each<T> {ItemBlock(puint index, T item)} {
+      puint index = 0;
+      for(pointer p = this.pointer; p < this.limit; p += sizeof(T):index++) {
+         ItemBlock(index, (T)*p);
+      }
+	 
+      // Usage:
+      // b.each(puint index, ushort item) {
+      //   print("[{0}] {1}", index, item);
+      // }
+   }
+}
+
+LimitBuffer<T> {
+   logic each {ItemBlock(T item)} {
+      for(pointer<T> p = this.pointer; p < this.limit; p++) {
+         ItemBlock(*p);
+      }
+	 
+      // Usage:
+      // b.each(item) { // dont need to specify the type because it is implied from T
+      //   print(item);
+      // }
+   }
+   logic each {ItemBlock(puint index, T item)} {
+      puint index = 0;
+      for(pointer p = this.pointer; p < this.limit; p += sizeof(T)) {
+         ItemBlock(index, *p);
+	 index++;
+      }
+	 
+      // Usage:
+      // b.each(puint index, item) {
+      //   print("[{0}] {1}", index, item);
+      // }
+   }
+}
+
+
+
+Tangent: Buffer Length vs Limit
+-------------------------------
+The question is what are the tradoffs of using a buffer length or a buffer limit?
+
+1. Buffer Representation Size (Length is equal to or better than Limit)
+     If you know the maximum size of the buffer, you can use a smaller type for the length, whereas
+     if you are using the limit, you must always use a pointer size.
+
+2. Iterating through the buffer (Limit may be slightly better)
+  Offset Variable:
+    Buffer Type: Length
+    Extra Variables: typeof(buffer.length) i (buffer.L)
+    Code:
+    for(buffer.L i = 0; i < buffer.length; i++) {
+      // item is buffer.pointer[i];
+    }
+
+  Pointer Variable
+    Buffer Type: Limit
+    Extra Variables: pointer p
+    Code:
+    for(pointer p = buffer.pointer; p < buffer.limit; p++) {
+      // item is *p
+    }
+
+3. Copying buffer of the same length (Length is better)
+  Length: Buffer new = {malloc(old.length), old.length};
+  Limit: puint length = b.limit - b.pointer;
+         pointer p = malloc(length);
+         Buffer new = {p, p + length};
+
+
+
+
+
+
+Interfaces
+-------------------------------------------
+interface: list<T> where T : Thing, default=byte
+   values:  unsigned length
+   methods: T get(unsigned index);
+            void set(unsigned index, T value);
+            [unsigned index] {get; set;}
+
+            cut(unsigned offset, unsigned cutIndex);
+            cut(unsigned cutIndex) = cut(0, cutIndex);
+
+            sublist(unsigned offset)
+            sublist(unsigned offset, unsigned length);
+
+            Boolean contains(T value);
+
+   optional methods:
+            void getRange(list<T> output);
+	    void getRange(list<T> output, unsigned length);
+            void setRange(list<T> input, unsigned length);
+            void setRange(list<T> input, unsigned offset, unsigned length);
+
+   logic: each() {block} [ <label> {block} ]
+
+     if(list.length == 0) break;
+
+     i = 0;
+     cacheHint list.length; // Note: You shouldn't have to explicitly say this, it should be calculated at compile time
+                            ///      The purpose of including it is to more for verification that the compiler catches it
+
+     label loopStart;
+     item = list[i];
+     exec block;
+     i++;
+     if(i < list.length) goto loopStart;
+    
+     example:
+       list<uint> l = [1,2,3,4,5];
+       l.each() {
+         print(item);
+       }
+
+       list<T> unknownList;
+       unknownList.each() {
+         if(item == 'j') goto FoundJ
+       } FoundJ {
+         print("Found a J!");
+         break; // or 'continue' (next iteration of loop) or 'back' (go back to where you jumped from)
+       }
+   
+   notes:
+     Examples of selecting a sublist
+     list<int> l               = [-1,0,2,10];
+
+     l.cut(0)                  = [         ];
+     l.cut(1)                  = [-1       ];
+     l.cut(2)                  = [-1,0     ];
+
+     l.cut(0,0)                = [         ];
+     l.cut(1,3)                = [   0,2   ];
+     l.cut(2,4)                = [     2,10];
+
+     l.sublist(0) = l          = [-1,0,2,10];
+     l.sublist(1)              = [   0,2,10];
+
+     l.sublist(0,0)            = [         ];
+     l.sublist(0,1)            = [-1       ];
+     l.sublist(1,0)            = [         ];
+     l.sublist(1,1)            = [   0     ];
+     l.sublist(2,2)            = [     2,10];
+     l.sublist(2,3)            = !argument out of range exception
+
+
+
+exception: WriteFailed
+exception: ReadFailed
+
+interface: Output
+   methods: void Write(Buffer buffer) throws WriteFailed;
+   examples:
+     Output o;
+     o.Write([0,1,2,3]);
+     o.Write([4,10]) WriteFailed {
+       return -1;
+     }
+     return 0;
+
+
+interface: Input
+   methods: puint ReadLength(Buffer buffer) throws ReadFailed;
+            pointer ReadLimit(Buffer buffer) throws ReadFailed;
+
+interface: IO : Input,Output
+
+interface: DataEvent
+   events: Data(Buffer buffer) // event example: DataEvent d;
+                               //                // Set the event callback function
+                               //                d.Data(Buffer b) {
+                               //                  
+                               //                  print(b.length);
+                               //                  
+                               //                }
+                               //                  
+                               //                // Tell the current thread to block on the event
+                               //                wait d.Data;
+ 
+
+interface: CloseEvent
+   events: Closed()
+
+
+
+Strings and Text
+--------------------------------------
+There is no string type, instead  have a 'Text' type with 2 implementations.
+
+enum TextEncoding {Ascii, Unicode, Utf1, Utf7, Utf8, Utf16, Utf18}
+
+abstract group {TextEncoding encoding; } Text;
+group {pointer pointer} CText      : Text; // Just a pointer to a buffer, the end of the text is delimited by a null
+group {Buffer buffer  } BufferText : Text; // A buffer which is a pointer and a length/limit
+
+abstract group {TextEncoding encoding; } Char<T> where T : unsigned;
+group {byte c  } ByteChar  : Char;
+group {ushort c} ShortChar : Char;
+group {uint c  } IntChar   : Char;
+
+The text encoding specifies how the characters are encoded in memory.
+The same text could be represented by two different byte sequences with different encodings.
+
+When to use Text:
+When you are interacting with the Console or with Files that are being read in text mode.
+
+Example:
+
+BufferText line = Console.ReadLine();
+
+if(line.StartsWith("help")) {
+  // When you use "my text" in your source code, the compiler will
+  // figure out how to encode that text based on the context. In this context it knows to use the same
+  // encoding as the Console.
+}
+
+Output o;
+o.Write(line.buffer); // this will write the encoded bytes to the output interface
+
+// To make sure the text is a certain encoding use the following
+o.Write(TextEncoding(Ascii,line));
+// If the console's encoding is Ascii, this will be compiled away, otherwise it will perform the proper conversion.
+
+
+You can add functions to a Text group this way
+
+Text {
+
+
+  void Trim(); // Trim whitespace off ends
+  void TrimStart();
+  void TrimEnd();
+
+  Int32 IndexOf(Text t);
+  Int32 IndexOf();
+  void Contains(byte b) {
+     ...
+  }
+  ...
+}
+
+
+
+
+Other Common Interfaces
+-----------------------------------------
+
+interface: Hash<ObjectType,IndexType> : where ObjectType : thing where IndexType : integer, default=uint
+   methods: IndexType Hash(ObjectType obj);
+
+
+exception: AlreadyAdded
+
+
+interface: HashMap<KeyType,ValueType>
+   requires: Hash<KeyType>
+
+   methods:
+     [KeyType key] { get; set; }
+     void AddNew(KeyType key, ValueType value) throws AlreadyAdded;
+     ValueType TryGet(KeyType key) NotFound {...} // executes not_found_block if the key is not in the map
+
+
+
+
+interface: Set<T>
+   enums: Type { Unspecified, SingleItem, List, Hash }
+
+   methods: Boolean Contains(T obj);
+            void Add(T value);
+            void AddNew(T value) throws AlreadyAdded;
+
+   optimization_hints: Type setType;
+     When someone gets a set, they have the option to view the set type
+     if they desire to optimize the call to Contains.
+      1. Unspecified: The user/compiler cannot optimize the Contains call.
+      2. SingleItem: The set contains only one item so the Contains call is just a single comparison.
+      3. List: The set is a list of items so the Contains call is just an iteration through the list.
+      3. Hash: The set uses a HashSet.
+
+interface: SingleItemSet<T> : Set<T>
+   values: T item;
+   overrides: Boolean Contains(T obj) { return obj == item; }
+   optimization_hints: setType = Type.SingleItem;
+
+interface: ListSet<T> : Set<T>
+   values: list<T> setList;
+   overrides: Boolean Contains(T obj) { return setList.Contains(obj); }
+   optimization_hints: setType = Type.List;
+
+interface: HashSet<T> : Set<T>
+   requires: Hash<T> hash;
+   optimization_hints: setType = Type.Hash;
+   
+
+
+
+Library Callback Blocks
+----------------------------------------
+This new feature is a replacement for the following patterns.
+Say you have a class library with a function that returns a structure
+or value that determines how the user should behave.
+Sometimes they will define custom structures or enums that the user can check
+against to decide how to behave.
+The other way to implement this functionality is for the user to pass in an
+interface or function pointer(s).  The library will call a different function
+depending on what functionality is being run.
+
+However, this new language will abstract this implementation away from the language
+by providing a new feature called "Callback Blocks".
+
+Callback blocks look like functions except they can have statement blocks following them.
+
+i.e.
+
+Parse(string) IsA {
+  print("Found 'A'\n");
+} IsB {
+  print("Found 'B'\n");
+} Invalid(message) {
+  print("String '{0}' was invalid: {1}", string, message);
+}
+
+Examples:
+
+1. Passing a block of data
+  Many times you must build a buffer of data to be given to a library to processed.
+  An example of this is building a udp buffer.
+  The problem with this is the same data is copied many times to different functions.
+  Instead of passing a buffer of data, you can use a callback block to enumerate the data.
+  
+
+
+
+
+
+interface: SocketAddress
+   methods:
+
+interface: Socket : IO
+   methods: void Bind(SocketAddress address);
+            void Listen(uint backlog);
+            Socket Accept();
+            void Connect(SocketAddress address);
+   events:             
+     
+
+//
+// Execution Patterns
+//
+
+There is no concept of processes or even threads really.
+There is a concept of a statement sequence which we can call a block.
+
+Blocks can be related to each other through an execution pattern.
+
+For example, blocks could run simultaneously with each other and synchronize
+with each other at certain instances.
+
+
+
+1. ThreadPair
+  A thread pair is two blocks that run simultaneously.  However, they are related because when one block is done, the Thread Pair will stop the other block.
+  Syntax:
+    ThreadPair { block } { block }
+
+2. StaticSelect
+  A set of event/block pairs.  A single thread will block on a set of events, whenever an event pops, it's block will be executed.
+  Syntax:
+    Select
+      event1 {block}
+      event2 {block}
+      ...
+    
+3. DynamicSelect
+  A runtime set of events is managed.  This functions the same as a StaticSelect except the events can change.
+  Syntax:
+    Select;
+    ...
+    Select.Add(event, block);    
+    
+   // Note: you can name a block:)    
+
+
+
+//
+// Examples
+//
+
+Socat (Using StaticSelect)
+------------------------------------------
+uint lengthOfReadBuffers;
+boolean listenMode;
+io ioA, ioB;
+
+while {
+  Select
+    ioA.data(list data, uint dataLength) { ioB.write(data.cut(dataLength)); }
+    ioB.data(list data, uint dataLength) { ioA.write(data.cut(dataLength)); }
+    ioA.closed() { ioB.close(); break; }
+    ioB.closed() { ioA.close(); break; }
+}
+
+
+Socat (Using ThreadPair)
+------------------------------------------
+uint lengthOfReadBuffers;
+boolean listenMode;
+io ioA, ioB;
+
+void InputToOutput(uint bufferLength, input input, output output)
+{
+  while {
+    uint length = input.read(readList) {
+      output.close();
+      return;
+    }
+    output.write(readList.sublist(length));
+  }	
+}
+
+ThreadPair {
+  InputToOutput(lengthOfReadBuffers, ioA, ioB);
+} {
+  InputToOutput(lengthOfReadBuffers, ioB, ioA);
+}
+
+
+
+Web Server
+-------------------------------------
+A web server can be described by a set of block sequences.
+Rather than coupling the thread design with the logic itself,
+these two parts of the design can be decoupled.
+
+For example, the block sequence to handle a new connection and the block
+sequence to handle a request can be specified independently of the threading model.
+However, in order to do this, the blocks must be decorated with locations that
+a threading implementation could use to know where the thread will be sleeping, how
+the thread will be woken up, and how to create a new thread and so on.
+Let's use an HTTP server as an example.
+
+
+
+AcceptConnection (
+  Socket listenSocket {
+    // Compile time checks
+    listenSocket.Bind was called;
+    listenSocket.Listen was called;
+  }
+  ,
+  list readBuffer
+) debug(
+  * = "Accept" // Tells the compiler that all debug statements can be turned on by a flag called 'Accept'
+) {
+
+  Socket newClient = listenSocket.Accept();   // This is a blocking method
+                                              // The language can use this information to
+                                              // know whether it should call select or something
+
+  debug("Accepted '{0}'", newClient);         // The language knows about the 'debug' function.
+                                              // It allows the debug statement to either be:
+                                              //   1. compiled away,
+                                              //   2. always executed or,
+                                              //   3. switched on/off at runtime.
+
+  thread HandleClient(newClient, readBuffer); // The 'thread' keyword tells the compiler
+                                              // that the following block can be executed on a seperate thread.
+                                              // Whether or not it will be is determined by other configuration.
+}
+
+HandleClient (
+  Socket client,
+  list readBuffer
+) {
+    
+...    
+
+}
+
+
+
+
+//
+// New Network API (Don't use sockets)
+//
+The compiler may compile code to use Sockets but the code in this will be abstract sockets away.
+
+Use Cases
+-------------------------
+
+Ethernet Client
+
+IP Client
+  
+
+Tcp Client
+  1. Request IO interface by providing an IP address and port
+
+Udp Client
+  1. Request IO interface by providing an IP address and port
+  OR
+  1. Request Datagram interface (bound to a local IP / Port)
+  2(opt). Bind a remote ip / port to the datagram interface to create an IO interface.
+
+Tcp Server
+  1. Provide network stack with IP filter/Port filter.
+  2. Subscribe to a connected event which returns an IO interface.
+
+Potential Interfaces
+------------------------
+
+interface: EndPoint
+   notes: This interface has no methods, the purpose of it is as a
+          placeholder for other interfaces.
+
+interface: OutputTransport
+   methods: void SendTo(EndPoint endPoint, list data);
+
+interface: InputTransport
+   methods: uint, EndPoint ReceiveFrom(Set<EndPoint> filter, list data);
+
+interface: FilteredInputTransport
+   methods: uint, EndPoint ReceiveFrom(list data);
+
+
+
+interface: IOTransport : InputTransport, InputTransport
+
+
+interface: IPAddress : EndPoint
+  enums: Type { V4, V6 }
+
+  methods: Boolean Equals(IPAddress address);
+
+interface: IPV4Address : IPAddress
+  values: uint address; // Endian: Network Order
+  constructors: (String dottedIPV4String)
+                (uint addressNetworkByteOrder)
+
+  methods: Boolean Equals(IPV4Address address);
+  
+
+interface: IPV6Address : IPAddress
+  values: list address; (compiler hint: address.length == 16)
+  constructors: (String ipv6Address)
+  
+  methods: Boolean Equals(IPV6Address address);
+
+
+// The point of a struct is to group a couple of interfaces
+struct IPEndPoint { IPAddress ip; ushort port; }
+
+interface: IOTransport<EndPoint,T> where T : thing, default=byte
+   methods: SendTo(IPEndPoint endPoint, list<T> data);
+
+interface: InputTransport<EndPoint,T> where T : thing, default=byte
+   methods: void SetFilter(Set<IPEndPoint> endPointFilter);
+            IPEndPoint ReceiveFrom(list<t> readBuffer) Closed { };
+
+
+Potential System API
+-------------------------
+
+struct TcpConnection { Handle tcpConnectionHandle; IO io; }
+
+
+
+IO TcpConnect(IPEndPoint endPoint);
+
+
+
+
+
+
+

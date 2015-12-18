@@ -1,0 +1,65 @@
+
+
+Keywords:
+
+1. Allow for a 'Logical-Compile', which will resolve all logical block calls
+
+
+<type>
+    - integer: [-inf,inf]
+    - natural: [0,inf]
+
+
+<fixture-modifier>
+	- out    Specifies that this fixture is expected to be modified with an expected value
+	         (If this fixtures is not modified in every branch, should I issue a warning?)
+
+
+logic <logic-reference-name>(<logic-modifier> <type> <fixture-name>, ...)
+{
+	// This is like an inline function
+
+
+}
+
+
+
+Calling Logic Blocks
+1. Need to be able to specify
+	a. whether a variable should be preserved
+	b. different return paths
+
+
+
+
+You can create logic blocks and function blocks. Differences:
+
+1.
+
+
+When calling a logic block, the caller indicates to the logic block which variables it wants to perserve
+using a ':'.  i.e. if you wanted to call the logic block 'unknown-logic' with three arguments, and you
+wanted to make sure the variable location x, is preserved, you would call it like so:
+	- unknown-logic,a:x,y;
+if you didn't care whether or not x is modified, you would call it like so:
+	- unknown-logic,a,x,y;
+
+
+
+repeat( <Natural> )
+{
+	// The memory address that contains <Natural> may or may not be modified
+	// If that memory location is locked, then the repeat will not modify that
+	// location, otherwise it will probably modify it for efficiency
+
+	// The repeat is nice because it will negotiate the most efficient loop based
+	// on whether or not it can modify the memory location of <Natural>
+}
+
+
+
+//
+// Need some advanced features that allow the programmer to present the computer with a set of
+// constraints and such, which will allow the compiler to create complex systems such as
+// parsers and such.
+//

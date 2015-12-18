@@ -1,0 +1,14 @@
+
+
+Types
+----------------------------------------
+
+Byte     : size is 1 byte
+utf8     : is a Byte. represents 1 byte of a utf8 encoded character
+
+
+
+Int      : size 4 bytes
+unichar  : is an Int. represents a unicode character
+
+sutf8    : Is either guaranteed to be a valid utf8 string, or contains a terminating null

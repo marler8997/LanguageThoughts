@@ -1,0 +1,21 @@
+use Net.Socket; // Net.Socket.Socket
+                // Net.Socket.AddressFamily (sub namespace)
+				// Net.Socket.Internetwork  (sub namespace)
+
+namespace Marler.NetworkTools;
+
+
+//
+// Every entry point can specify how many streams it requires. You can
+// have input streams, output streams, and io streams
+//
+entry(out info, out error) int Main(uint2 port=80)
+{
+	
+	int socket = Socket(Net.Socket.AddressFamily.InterNetwork, Net.Socket.SocketType.Stream, Net.Socket.Protocol.Tcp);
+	
+	if(socket < 0) {
+		
+	}
+	
+}

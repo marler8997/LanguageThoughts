@@ -1,0 +1,242 @@
+
+
+
+Goals of this "simple" language is not to have all the features of a modern language.
+
+1. Keep it Simple
+   If a feature is too complicated to have, don't include it
+   Like NO GARBAGE COLLECTION!
+2. Able to interface with all MAJOR languages
+   This language is simple because it is designed to be used with other languages.  Keep the simple features in this language and the complex ones in the other languages.
+   Can compile this language to other languages, or compile it to binary code that can be imported by other languages.
+
+
+
+
+
+How to manage memory.
+
+Every pointer to an object has to potential to point to memory.
+The problem with the stack is that it is a FIFO.
+A function cannot allocate memory on the stack and then return that memory to the caller function.
+The allocation must be done before the function is called and a pointer to the memory passed to the caller.
+
+
+
+This langauge will not have char types, only types that explain their byte width.
+
+p = number of bytes to hold a pointer
+
+name    | width   | signed
+---------------------------------
+bool     | ? bytes | NA (Note, this will be the smallest type possible.  It's possible this could be combined with other bools to form a bit flag)
+byte     | 1 byte  | signed
+ubyte    | 1 byte  | usigned
+short    | 2 bytes | signed
+ushort   | 2 bytes | unsigned
+int      | 4 bytes | signed
+uint     | 4 bytes | unsigned
+long     | 8 bytes | signed
+ulong    | 8 bytes | unsigned
+cent     | 16 bytes| signed
+ucent    | 16 bytes| unsigned
+ptrdiff_t| p bytes | signed (same width as a pointer, unlike size_t this type is not large enough to hold the different between any 2 pointers because it is signed)
+size_t   | p bytes | unsigned (can hold the offset to any pointer as it is the same width as a pointer)
+-----------------------------------
+float    | 4 bytes | signed
+double   | 8 bytes | signed
+real     | ? bytes | signed (largest FP size in hardware, 80 bits for x86)
+-----------------------------------
+???complex types???
+-----------------------------------
+<type>[] | 2*p bytes | same as struct {<type>* data; size_t length}
+<type>[|] | 2*p bytes | same as struct {<type>* data; <type>* limit}
+
+alias string = const(ubyte)[];
+
+
+:
+-----------------------------------------
+NOTE: ":" means "is"
+a colon is used to declare variables;
+
+const
+-----------------------------------------
+var : const(T);    // var cannot be modified at all
+var : const(T)*;   // var is a pointer that can be modified, but whatever var is pointing to cannot be
+var : const(T)[];  // var is an array that can't be modified but the array length and pointer can be
+var : const(T)[|]; // var is an array that can't be modified but the array pointer and limit can be
+
+auto
+-----------------------------------------
+var : auto;        // var is an "automatic type", its type will be determined at the first unambiguous assignment seen. If
+                   // no unambigious assigment is found, then it will select a default type based on the ambiguous assignment.
+
+var := 3;          // same as var : auto = 3;
+
+
+Idea: use '\N' to be the os newline
+
+For now function don't have return types.
+This is because a return type is normally passed by the stack.
+However, sometimes it might be better to pass in a pointer instead of returning a value.
+So this is left up to the compiler for now.
+
+module std.stdio; // For now, a file cannot contain more than one module, and module must be the very first thing in the file
+
+Type: File
+
+Function: return_type name(input_args...) [ (output_args...) ]
+
+Function: void openfile(filename : ubyte[], flags : ubyte)(file : File)
+
+Function: void write   (file : File = stdout, msg : ubyte[])
+Function: void writeln (file : File = stdout, msg : ubyte[])
+Function: void writef  (file : File = stdout, format : ubyte[], ...)
+Function: void writefln(file : File = stdout, format : ubyte[], ...)
+
+HelloWorld.simple
+-----------------------------------------
+import std.stdio;
+
+main(program : string, args : string[])
+{
+  write("Hello World!\N");
+}
+-----------------------------------------
+
+module std.console;
+
+Function: void usageProgram(ref string program)
+Description: Modifies program to be appropriate for usage
+
+module std.parse;
+
+ubyte parse
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!continue here
+
+
+--------------------------------------------------
+netcat
+--------------------------------------------------
+
+void usage(program : string)
+{
+  usageProgram(ref program);
+  writef("Connect-Mode: %s [-options] host port\N", program);
+  writef("Listen-Mode : %s [-options] port\N", program);
+  write ("  -l | --local-port port    Bind the local socket to the given port\N");
+  write ("  -h | --local-host host    Bind the local socket to the given host\N");
+  write ("  -b | --buffer-size size   Use this buffer size (default is 2048)\N");
+}
+
+main(program : string, args : string[])
+{
+  if(args.length.empty) {
+    usage(program);
+    return;
+  }
+
+  localPort : ushort = 0;
+  localHost : string = null;
+  bufferSize : size_t = 2048;
+
+  getopt(ref args,
+	 "l|local-port", ref localPort,
+         "h|local-host", ref localHost,
+	 "b|buffer-size", ref bufferSize);
+
+  listenMode : bool;
+  connectorString : string;
+  portString : string;
+
+  if(args.length == 1) {
+    listenMode = true;
+    if(localPort != 0){
+      writeln("You cannot set local port in listen mode");
+      return;
+    }
+    portString = args[0];
+  } else if(args.length == 2) {
+    listenMode = false;
+    if(localHost) {
+      writeln("You cannot set the local host in connect mode");
+      return;
+    }
+    connectorString = args[0];
+    portString      = args[1];
+  }
+
+  port : ushort;
+  try {
+
+!!!!!!!! stopped here
+
+    port = to!ushort(portString);
+  } catch(ConvException) {
+    writefln("'%s' is not a valid port", portString);
+    return;
+  }
+
+  Socket connectedSocket;
+  if(listenMode) {
+    writeln("listen mode not implemented");
+    return;
+  } else {
+    ISocketConnector connector;
+    string ipOrHost = parseConnector(connectorString, connector);
+    Address address = addressFromIPOrHost(ipOrHost, port);
+
+    connectedSocket = new Socket(address.addressFamily(), SocketType.STREAM, ProtocolType.TCP);
+
+    if(localPort != 0) {
+      connectedSocket.bind(new InternetAddress(InternetAddress.ADDR_ANY, localPort));
+    }
+
+    // Connect
+    if(connector is null) connectedSocket.connect(address);
+    else connector.connect(connectedSocket, address);
+  }
+
+  //
+  // Connected Console to TCP Loop
+  //
+  Tid tid = spawn(&socket2stdout, cast(shared)connectedSocket, bufferSize);
+
+  ubyte[] buffer = (cast(ubyte*)alloca(bufferSize))[0..bufferSize];
+  if(buffer == null) throw new Exception("alloca returned null: out of memory");
+
+  //std.stdio.stdin.setvbuf(buffer, _IOLBF);
+  std.stdio.stdin.setvbuf(buffer, _IONBF);
+
+  while(true) {
+    //writeln("Reading bytes...");std.stdio.stdout.flush();
+    size_t bytesRead = fread(buffer.ptr, 1, bufferSize, core.stdc.stdio.stdin);
+    //writeln("Read bytes");std.stdio.stdout.flush();
+    if(bytesRead <= 0) break;
+    connectedSocket.send(buffer[0..bytesRead]);
+    //ubyte[] read = std.stdio.stdin.rawRead(buffer);
+    //if(read == null || read.length <= 0) break;
+    //connectedSocket.send(read);
+  }
+}
+
+
+
+void socket2stdout(shared Socket sharedSocket, uint bufferSize)
+{
+  ubyte[] buffer = (cast(ubyte*)alloca(bufferSize))[0..bufferSize];
+  if(buffer == null) throw new Exception("alloca returned null: out of memory");
+
+  Socket socket = cast(Socket)sharedSocket;
+
+  ptrdiff_t bytesRead;
+  while(true) {
+    bytesRead = socket.receive(buffer);
+    if(bytesRead <= 0) break;
+    write(cast(char[])buffer[0..bytesRead]);
+    std.stdio.stdout.flush();
+  }
+}
+
+
