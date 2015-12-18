@@ -1,0 +1,130 @@
+
+
+C should have the following:
+
+1. Global scoping
+
+
+{
+    // cannot be called outside this scope
+    private int helper(int input)
+    {
+        ...
+    }
+    // can be called outside the scope
+    public int useful_function()
+    {
+        ...
+        helper(0); // can call the helper
+        ...
+    }
+}
+
+
+2. Namespaces
+
+scope MyCompany.MyLibrary
+{
+    private void my_private_function()
+    {
+        ...
+    }
+    public void cool_function()
+    {
+        ....
+    }
+}
+
+
+Application
+
+using MyCompany.MyLibrary;
+
+
+void main()
+{
+    cool_function();
+}
+
+
+3. Uniform Function Call Syntax (UFCS)
+
+void something(struct data* data)
+{
+    ...
+}
+
+data.something(); // calls something(data);
+
+
+4. Variable lifetime attributes
+
+struct stuff* saved_stuff;
+
+void save_stuff(struct stuff* stuff)
+{
+    saved_stuff = stuff; // ERROR: stuff's lifetime may not be global
+}
+void save_stuff(global struct stuff* stuff)
+{
+    saved_stuff = stuff; // OK
+}
+
+
+
+void add(struct list* list, struct list_node* node) life(node) >= life(list)
+{
+    node->next = list->head;
+    list->head = node->next;
+}
+
+// EXAMPLE
+void c(struct list* list, struct list_node* node)
+{
+  list.add(node); // error: life(node) ? life(list)
+}
+void b(struct list* list)
+{
+  struct list_node my_node;
+  c(list, &my_node);  
+  // my_node now de-allocated
+}
+void a()
+{
+  struct list my_list;
+  b(&my_list);
+  my_list.head // !!! now references de-allocated memory !!!!
+}
+// EXAMPLE FIX: STEP 1
+void c(struct list* list, struct list_node* node) life(node) >= life(list)
+{
+  list.add(node); // OK
+}
+void b(struct list* list)
+{
+  struct list_node my_node;
+  c(list, &my_node);  // ERROR: life(&my_node) < life(list)
+  // my_node now de-allocated
+}
+void a()
+{
+  struct list my_list;
+  b(&my_list);
+  my_list.head // !!! now references de-allocated memory !!!!
+}
+// EXAMPLE FIX: STEP 2
+void c(struct list* list, struct list_node* node) life(node) >= life(list)
+{
+  list.add(node); // OK
+}
+void b(struct list* list)
+{
+  struct list_node* my_node = new list_node life(list);
+  c(list, my_node);
+}
+void a()
+{
+  struct list my_list;
+  b(&my_list);
+  my_list.head // FIXED!!!
+}

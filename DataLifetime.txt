@@ -1,0 +1,102 @@
+
+When you clearly define/restrict the lifetime of data in your program, you can do a lot of things.
+
+Scoping is a great way to do this because outside of the scope, you can't access the variable, so you are restricting it's lifetime.
+
+The more you know about the lifetime of a variable/allocation of memory, the better chance you have of knowing where it should be allocated.  A function variable is typically allocated on the function's stack because it is tied to the life of a function.  If a reference to that memory escapes the function and the function ends, then that reference could be used and the data will be corrupted with whatever function uses that memory later.
+
+A stack is perfect for a particular pattern of allocation.  If the last memory to be allocated is the first to be freed, then a stack is perfect.  The case where you run into trouble is when you want to keep new memory, but free old memory.  There is a way to remedy this.  If you know the size of the memory you want to keep before hand, you can pre-allocate it.  For example, say you wanted to convert a number to an ascii string.  You could pre-allocate memory on the stack for the maximum number (or use a heuristic based on the value), then call a function to parse/place the digits into the buffer, then remove the function on the stack and leave the buffer with just enough space for the newly parsed number.
+
+
+We could explore another type of memory...a memory queue (instead of a stack). A memory queue would favor the first allocated, first freed pattern.  If we wanted to convert a number to an ascii string in this example, we would allocate the space for the parse function, then convert it to a string on the queue, then when you were done, you would de-allocate the original number and the function.  You'd be left with just the string on the queue.  Like a function, we would probably want some sort of way to group a chunk of memory on the queue.  Each chunk would be freed once it is no longer used. The language should accomodate the variable lifetimes in a way that accomodates a queue (FIFO). 
+
+// This syntax accomodates a stack design
+{
+    var x;
+    {
+        var y;
+        {
+            var z;
+        } // z is gone
+    } // y is gone
+} // x is gone
+
+
+// I can't figure out how to accomodata a queue design
+
+
+--------------------------------------
+Lifetimes and Scope
+--------------------------------------
+
+A variable's scope specifies who can access it. You always want the most limited scope that will still provide all the necessary access. In the ideal case, it would be impossible for a data's scope to be accessed outside it's lifetime.  It would be nice if the language prevented this, but with runtime referencing, it has not been done yet.  To help combat this, you should also be able to limit the scope even more than the variable's lifetime.  For example, you should be able to limit a global variable's scope.
+
+Maybe there is a way for a C function to tell it's caller about the variables lifetime.
+
+struct some_data* globalRef;
+void my_escape(struct some_data* data)
+{
+    globalRef = data;  // reference to data escapes the function into a global variable
+                       // If we add this feature, this would be forbidden without a n attribute on the pointer
+}
+
+// There should be a way for C to say what lifetime the data can escape to.
+void my_escape(global struct some_data* data)
+{
+    globalRef = data; // now this is OK
+}
+
+example:
+
+void some_func()
+{
+    struct some_data my_data;
+}
+
+my_escape(&my_data); // ERROR: my_escape requires a pointer with global lifetime, my_data's lifetime is not global.
+
+Keep in mind that global lifetime and global scope should also be differentiated.
+
+// restrict global scope
+{
+    int my_global; // no on outside this scope can see my_global.
+
+}
+
+// You can also create named scopes, so that global scopes can be shared
+
+scope MyCompany.Networking
+{
+    int some_data;
+}
+
+
+...
+
+scope MyCompany.Networking
+{
+   void my_func()
+   {
+       some_data; // refers to the global variable
+   }
+}
+
+
+//
+// You could also make it public to share between files
+//
+public scope MyCompany.PublicData
+{
+    int myPublicData; // Can be shared between files
+}
+
+
+// in another file, you could also reference it like this
+
+MyCompany.PublicData.myPublicData; // !
+
+// Or you could specify a using
+
+using MyCompany.PublicData;
+
+myPublicData;
