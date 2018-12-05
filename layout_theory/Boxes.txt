@@ -1,0 +1,190 @@
+Boxes is a new web protocol that uses boxes.
+
+
+<color> (same as css)
+
+Box {
+  Fill X|Y|B [push]  // fill all available space in the containing parent. If push is specified, then it sort of means to add this same fill attribute to each parent that is not fixed
+  Back <color>
+
+  // layout
+
+  ExplicitBreaks  // This property means that the box will arrange all children either horizontally or vertically until a break is specified. if the box reduces size to smaller than the content, then the content is overflowed (could handle with scroll bars)
+
+
+  block     // This property means different things depending on the parents layout
+            // If the parent arranges the children vertically, then this property means that this box will appear on it's own row (block out all other children on its row. If the parent arranges the children horizontally, then the property means that this box will appear on it's own column (block out all other children on it's column.
+             
+
+  Layout Center|Left|Right|Top|Bottom [X|Y] // layout pushes everthing to the (center/left/right/top/bottom) in a vertical stack (horizontal stack if 'x' is specified)
+  [Center|Left|Right|Top|Bottom] "Child" // Puts the given Child in the (center/left/right/top/bottom) part of the box
+  
+
+}
+
+
+
+
+
+Layout Questions:
+
+
+
+
+* How will the parent determine when to put a child on a new row?
+   1. You could break when you run never break (one extreme), or put every single child on a new row (the other extreme).
+   2. You could only put certain types of elements on their own row (Maybe only put boxes on their own row).
+   3. You can break based on some explicit mark.
+
+XBox and YBox:
+   YBox: every child on its own row
+   XBox: every child on its own column
+   Alignment: YBox, specify left, center, or right, XBox, specify if alignment should be top, center, or bottom.
+   Spacing: Default spacing between children is 0, but can be overriden at desired location within the children, i.e.
+   	    YBox {  child1 child2 Parent-Spacing:5px; child3 child4 Parent-Spacing:0; child5 ...}
+
+
+Example:
+
+
+// The Facebook Web Site
+
+
+// A "RootBox" is a box that is added to the highest level possible
+RootBox {
+  GroupFilter Page // This means it will only be added to the highest level if the highest level box is a part of the 'Page' group
+  
+  
+  
+
+}
+
+
+
+<Group Page>
+  Box {
+    Fill X;        // fill the horizontal x direction
+    Back #3B5998;  // blue backgroun
+    Center Box {
+       Width 980;
+       Left Box {
+          Layout Left X
+          Image '/Img/Logo.png';
+          DropDownButton {
+             Image '/Img/FriendRequestIcon.png';                    // The Image for the button
+             Hover {Back #eee;}                                     // Changes the background of the button when it is hovered over
+             Selected {Image '/Img/FriendRequestIconSelected.png';} // Changes the button image when the drop down is selected
+             DropDown Box PendingFriendRequests                     // Sets the DropDown to the box 'PendingFriendRequests'
+          }
+          DropDownButton {
+             Image '/Img/MessagesIcon.png';                         // The Image for the button
+             Hover {Back #eee;}                                     // Changes the background of the button when it is hovered over
+             Selected {Image '/Img/MessagesIconSelected.png';}      // Changes the button image when the drop down is selected
+             DropDown Box MessagesDropDown                          // Sets the DropDown to the box 'MessagesDropDown'
+          }
+          DropDownButton {
+             Image '/Img/NotificationsIcon.png';                    // The Image for the button
+             Hover {Back #eee;}                                     // Changes the background of the button when it is hovered over
+             Selected {Image '/Img/NotificationsconSelected.png';}  // Changes the button image when the drop down is selected
+             DropDown Box Notifications                             // Sets the DropDown to the box 'Notifications'
+          }
+	  TextBox {
+             Info "Search for people, places and things"
+          }	  
+       }
+       Right Box {
+         Layout Right X
+         DropDownButton {
+            
+         }
+         Home
+         
+       }
+    }
+  }
+
+  
+  <Content>
+</Group>
+
+
+<Box Home Group="Page" Default>
+  This is the home page
+</Box>
+
+<Box Contact group="Page">
+  This is the contact page.  Email is marler8997@vandals.uidaho.edu.
+</Box>
+
+
+
+
+
+
+//
+// THE NEW HULU PAGE
+//
+
+Box {
+   Layout Top   // Elements are pushed to the top and stacked in the Y direction
+   Fill B
+   Box {
+      Fill X
+      Center Box {
+         Width 900
+	 Left Box {
+	   Image '/Img/Logo.png'
+	   DropDownButton {
+	      Browse
+	   }
+	 }
+	 Center Box {
+	   Textbox Search
+	 }
+	 Right Box {
+	   Login SignUp
+	 }
+      }
+   }
+}
+
+
+
+<y>
+  center:
+  <y maxwidth=1600 back=black>
+    center:
+    <x minwidth=980>
+      left:
+      <img src="hulu.jpg"/>
+      Browse
+
+      center:
+      Search
+
+      right:
+      login
+      sign up
+    </x>
+    <y width=600>
+    center:
+    <video>
+    <x>
+      <box width=400>Current Episode</box>
+      Advertisement
+    </x>
+
+    left:
+    <x>
+      <x><img details.png>details</x>
+      <x><img comments.png>comments (n)</x>
+      <x><img tweet.png>tweet</x>
+      <x><img facebook.png>facebook</x>
+      <x><img share.png>share</x>
+    </x>
+    facebook like	    
+  </y>
+
+
+
+</y>

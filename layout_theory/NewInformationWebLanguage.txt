@@ -1,0 +1,29 @@
+This document describes a new information language used for the web.
+Unlike HTML, this language contains no information on how to display the content.
+
+
+<gallery>
+  <img src="/img/image1.jpg"/>
+  <img src="/img/image2.jpg"/>
+  ...
+</gallery>
+
+<section name="About">
+</section>
+
+
+
+Emulator Management Page
+
+
+<tabledata name="MyEmulators" format="table">
+  <columns>Check In,Emulator,Product,Region,Location,Checkout Time Left</columns>  
+  
+</tabledata>
+
+
+
+<function>
+	<!-- What are the inputs/outputs? Does this affect a set of data? -->
+
+</function>

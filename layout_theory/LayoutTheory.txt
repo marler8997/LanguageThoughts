@@ -1,0 +1,87 @@
+This repository is intended to document different layout theories.
+
+The purpose of this is to create a new language that can describe commonly used layouts.  This can be used as an alternative to HTML/css/javascript.
+
+Component
+----------------------------------------
+A graphical object displayed on the screen.  
+
+Properties:
+
+  1. Size: fixed? fillX/fillY? max/min width/height?
+    Except the root, every component is a part of a container an inherits properties from the parent container.  For example, the parent container may have a layout with an ordered list of children and specify that the last child fill remaining space.  The parent would then effectively request the child to fillX/fillY.
+  2. Position: which parent container is the position based on? left/top/right/bottom fixed?
+ 
+
+
+Container
+----------------------------------------
+A container is a graphical object that can contain other objects.  A container can be classified based on the following characteristics:
+   1. Size constraints: Is the size fixed? If not, then the size will be determined by
+      a. Minimum/maximum width/height
+      b. Requested size from children
+
+
+
+
+Potential Render Flows
+----------------------------------------
+This is the process of determining the Position and Size of each component.
+
+NOTE: Think about Walking through Breadth First vs Depth First?
+
+at container
+   if size and position are fixed, go through children
+   if size is fixed and position is not ...
+   if position is fixed and size is not
+
+  
+
+
+
+
+The render can start from any container.
+
+Container.positionProperties;
+Container.sizeProperties;
+Container.renderChildren(parentPosition, parentSizeProperties);
+
+
+
+
+
+Layouts taken from Java Layout Managers
+
+These layouts fall into the category of "Container Layouts"
+
+1. RectangleContainer
+
+Attributes
+   1. Is the width and/or height fixed?
+      a. Does the width and/or height refer to the box around the margin, border, padding, or content?
+   2. What is the Margin/BorderWidth/Padding?
+   3. Will this container be used as a position reference for it's positioned children?
+
+
+
+
+Example1
+
+<rc> <* Rectangle Container *>
+
+Hello this is my picture:) <img "/img/me.jpg">
+
+</rc>
+
+
+How is the browser laed out?
+
+1. The entire window itself is a Rectangle Container.  The buttons and menus will be layed out using use some sort of layout.
+
+
+
+
+Rectangle Layout Types
+
+1. Vertical Layout
+   - Means that the top of each child element will be aligned with the bottom of the previous, with the last child rilling the remaining space.
