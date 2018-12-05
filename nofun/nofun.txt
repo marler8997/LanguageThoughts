@@ -1,0 +1,30 @@
+nofun is a high level scripting language which takes the emphasis of functions, hence the name "nofun"
+
+
+
+
+================================================================================
+Code Block
+================================================================================
+
+Syntax:
+
+<Code-Block-Name> options {
+
+}
+
+A Code block can use variables that it has not declared. For example, suppose the following block is defined:
+
+SetValueToVar {
+  var = value
+}
+
+
+
+
+================================================================================
+Built-in String Functions
+================================================================================
+split
+indexof
+
